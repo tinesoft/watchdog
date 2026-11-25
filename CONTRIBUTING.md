@@ -12,7 +12,7 @@ pnpm install
 
 `pnpm install` also installs the Git hooks (Husky) and sets `merge.ff` and `pull.ff` to `only`.
 
-The repository includes a dev container (`.devcontainer/`) with Node, pnpm, the GitHub CLI and Claude Code installed. Open the folder in VS Code and choose **Reopen in Container**. The browser tests need Chromium and its system libraries:
+The repository includes a dev container (`.devcontainer/`) with Node, pnpm, the GitHub CLI and Claude Code installed. Open the folder in VS Code and choose **Reopen in Container**; its setup script installs Chromium and its system libraries for the browser tests. Outside the dev container, install them yourself:
 
 ```sh
 pnpm --filter web exec playwright install --with-deps chromium

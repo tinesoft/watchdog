@@ -47,6 +47,10 @@ echo -e "\n🤖 Installing Claude CLI..."
 run_command "curl -fsSL https://claude.ai/install.sh | bash"
 echo "✅ Done"
 
+echo -e "\n🌐 Installing Chromium and its system libraries (for the Playwright browser tests)..."
+run_command "pnpm --filter web exec playwright install --with-deps chromium"
+echo "✅ Done"
+
 echo -e "\n🎨 Installing JetBrains Mono font..."
 run_command "curl -fsSL https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/install_manual.sh"
 echo "✅ Done"
