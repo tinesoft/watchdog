@@ -703,10 +703,61 @@ a:hover {
 .barking .bark-word {
   animation: barkword 1.6s ease-in-out infinite;
 }
+@keyframes lookaround {
+  0%,
+  12%,
+  100% {
+    transform: rotate(0);
+  }
+  22%,
+  38% {
+    transform: rotate(-12deg) translateX(-1px);
+  }
+  48%,
+  52% {
+    transform: rotate(0);
+  }
+  62%,
+  78% {
+    transform: rotate(9deg) translateX(1px);
+  }
+  88% {
+    transform: rotate(0);
+  }
+}
+@keyframes lookeye {
+  0%,
+  12%,
+  48%,
+  52%,
+  88%,
+  100% {
+    transform: none;
+  }
+  22%,
+  38% {
+    transform: translateX(-1.2px);
+  }
+  62%,
+  78% {
+    transform: translateX(1.2px);
+  }
+}
 .calm .bark-head {
-  animation: calm 4s ease-in-out infinite;
+  animation: lookaround 5s ease-in-out infinite;
   transform-box: fill-box;
-  transform-origin: center;
+  transform-origin: 35% 85%;
+}
+.calm .bark-eye {
+  animation: lookeye 5s ease-in-out infinite;
+}
+.legend-pin {
+  position: sticky;
+  bottom: 12px;
+  z-index: 12;
+  box-shadow:
+    0 -10px 30px -18px rgba(0, 0, 0, 0.55),
+    0 10px 30px -18px rgba(0, 0, 0, 0.55);
 }
 @keyframes barkhead {
   0%,
@@ -759,15 +810,6 @@ a:hover {
   12%,
   32% {
     transform: scale(1.15);
-  }
-}
-@keyframes calm {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-1px);
   }
 }
 .repcard {

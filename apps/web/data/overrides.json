@@ -79,7 +79,7 @@
   "CVE-2024-3094": {
     "title": "Backdoor hidden in xz / liblzma release tarballs",
     "summary": "Malicious code planted by a long-term maintainer hooked into sshd through systemd on some Linux distributions, enabling remote access for the attacker.",
-    "category": "os",
+    "category": "supply",
     "threat": "trojan",
     "eco": null,
     "pkg": "xz-utils",

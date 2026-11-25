@@ -1,5 +1,5 @@
 export type Severity = 'critical' | 'high' | 'medium'
-export type Category = 'packages' | 'languages' | 'os' | 'ai' | 'tools'
+export type Category = 'packages' | 'languages' | 'os' | 'ai' | 'tools' | 'supply'
 export type ThreatType = 'bug' | 'worm' | 'virus' | 'trojan' | 'hacker'
 export type TriageStatus = 'investigating' | 'patched' | 'not_affected' | 'ignored'
 

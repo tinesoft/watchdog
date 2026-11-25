@@ -130,7 +130,7 @@
       "published": "2024-03-29",
       "product": "xz-utils · liblzma",
       "exploited": false,
-      "category": "os",
+      "category": "supply",
       "threat": "trojan",
       "eco": null,
       "pkg": "xz-utils",

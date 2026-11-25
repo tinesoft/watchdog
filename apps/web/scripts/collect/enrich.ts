@@ -71,12 +71,16 @@ const OS =
 const AI =
   /\bllm\b|\bmcp\b|model context|copilot|pytorch|tensorflow|ollama|langchain|openai|transformers|vllm|llama|hugging ?face|\bai\b|machine learning/i
 
+const SUPPLY =
+  /supply[- ]chain|malicious (package|code|version|release|commit)|backdoor|compromised (package|release|maintainer|account|dependency)|typosquat|dependency confusion|embedded malicious/i
+
 export function categoryOf(
   text: string,
   eco: string | undefined,
   pkg: string | undefined,
 ): Category {
   if (AI.test(text)) return 'ai'
+  if (SUPPLY.test(text)) return 'supply'
   if (pkg === 'stdlib' || (!eco && LANG.test(text))) return 'languages'
   if (!eco && OS.test(text)) return 'os'
   if (eco && !['Go'].includes(eco)) return 'packages'

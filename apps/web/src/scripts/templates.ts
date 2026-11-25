@@ -28,6 +28,7 @@ export interface Ctx {
   version: string
 }
 
+const REPO_URL = 'https://github.com/tinesoft/watchdog'
 const sevShort = { critical: 'CRIT', high: 'HIGH', medium: 'MED' } as const
 const statusLabel: Record<TriageStatus, string> = {
   investigating: 'Investigating',
@@ -42,6 +43,7 @@ const catLabel = {
   os: 'OS',
   ai: 'AI',
   tools: 'Tools',
+  supply: 'Supply chain attack',
 } as const
 const presets: [string, string][] = [
   ['Next.js', 'next'],
@@ -84,14 +86,18 @@ function dogMark(cls: string, color: string): string {
   return `<svg class="${cls}" width="36" height="36" viewBox="0 0 32 32" aria-hidden="true" style="color: ${color}"><rect x="1" y="1" width="30" height="30" rx="8" style="fill: var(--surface)" stroke="currentColor" stroke-width="1.5"></rect><path d="M7 24 L9 14 L10 6 L14 12 L17 7 L19 13 L26 16 Q27.5 17 26.5 18.5 L21 20 L15 23 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path><circle class="eye" cx="17.5" cy="15" r="1.7" fill="currentColor"></circle></svg>`
 }
 
-function sweepPill(c: Ctx): string {
+/** The pill's text. Also called on a timer, so the countdown moves without a re-render. */
+export function sweepText(c: Pick<Ctx, 'data' | 'e' | 'now'>): string {
   const t = c.data.threats
   let text = 'loading…'
   if (t?.sample) text = 'sample data · first sweep pending'
   else if (t?.collectedAt)
     text = `swept ${esc(ago(new Date(t.collectedAt), c.now))} ago · next in ${esc(until(nextSweep(c.now), c.now))}`
-  const offline = c.e.offline ? ' · offline' : ''
-  return `<span class="mono" style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: ${c.e.offline ? 'var(--high)' : 'var(--lime)'}; box-shadow: 0 0 10px ${c.e.offline ? 'var(--high)' : 'var(--lime)'}"></span>${text}${offline}</span>`
+  return text + (c.e.offline ? ' · offline' : '')
+}
+
+function sweepPill(c: Ctx): string {
+  return `<span class="mono" style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: ${c.e.offline ? 'var(--high)' : 'var(--lime)'}; box-shadow: 0 0 10px ${c.e.offline ? 'var(--high)' : 'var(--lime)'}"></span><span id="wd-sweep">${sweepText(c)}</span></span>`
 }
 
 function alertsPanel(c: Ctx, items: Row[]): string {
@@ -219,7 +225,7 @@ ${nav
 }
 
 function dogFace(size: number): string {
-  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true" style="overflow: visible"><g class="bark-head"><path d="M4 24 L6 14 L7 6 L11 12 L14 7 L16 13 L23 16 Q24.5 17 23.5 18.5 L18 20 L12 23 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><circle cx="14.5" cy="15" r="1.6" fill="currentColor"></circle><path class="bark-jaw" d="M18 20 L23 21.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></g><path class="bark-wave w1" d="M26 14 Q28 17 26 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path class="bark-wave w2" d="M28.5 11.5 Q31.5 17 28.5 22.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>`
+  return `<svg width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true" style="overflow: visible"><g class="bark-head"><path d="M4 24 L6 14 L7 6 L11 12 L14 7 L16 13 L23 16 Q24.5 17 23.5 18.5 L18 20 L12 23 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><circle class="bark-eye" cx="14.5" cy="15" r="1.6" fill="currentColor"></circle><path class="bark-jaw" d="M18 20 L23 21.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></g><path class="bark-wave w1" d="M26 14 Q28 17 26 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path><path class="bark-wave w2" d="M28.5 11.5 Q31.5 17 28.5 22.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>`
 }
 
 // ---- threat list --------------------------------------------------------
@@ -250,7 +256,7 @@ const sevTips: [string, string, string][] = [
 ]
 
 function legend(): string {
-  return `<section aria-label="What the icons mean" style="display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); container-type: inline-size">
+  return `<section aria-label="What the icons mean" class="legend-pin" style="display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); container-type: inline-size">
 <span class="mono lg-key" style="flex: none; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-right: 2px">Key</span>
 ${keyTips.map(([k, l, tip]) => `<span class="lg" tabindex="0" aria-describedby="lg-${k}"><span class="lg-ic">${icons[k as 'bug']}</span><span class="lg-label">${l}</span><span class="lg-tip" role="tooltip" id="lg-${k}">${tip}</span></span>`).join('')}
 <span aria-hidden="true" style="flex: none; width: 1px; height: 24px; background: var(--line2)"></span>
@@ -270,10 +276,12 @@ export function listView(c: Ctx): string {
   const [title, sub] = titles[c.e.view] ?? titles.all!
   const base = inView(c.rows, c.e.view)
   const shown = filtered(base, c.e)
-  const cats = (['all', 'packages', 'languages', 'os', 'ai', 'tools'] as const).map(k => ({
-    k,
-    n: k === 'all' ? base.length : base.filter(v => v.category === k).length,
-  }))
+  const cats = (['all', 'packages', 'languages', 'os', 'ai', 'tools', 'supply'] as const).map(
+    k => ({
+      k,
+      n: k === 'all' ? base.length : base.filter(v => v.category === k).length,
+    }),
+  )
   return `<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px"><div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em; line-height: 1.1">${title}</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">${sub}</p></div>
 <div style="display: flex; gap: 8px">${c.e.view === 'inbox' ? '<button type="button" class="btn btn-g" data-act="clear-inbox">Mark all as read</button>' : ''}<button type="button" class="btn btn-g" data-act="export-csv">Export CSV</button></div></div>
 <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><div style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2)">${cats
@@ -546,8 +554,8 @@ export function settings(c: Ctx): string {
 <div style="display: flex; flex-direction: column; gap: 10px">${h('GitHub issues')}${input('wd-repo', 'repo', 'Repository for “Open GitHub issue”', c.p.repo, 'owner/repo')}${input('wd-labels', 'labels', 'Labels added to new issues', c.p.labels, 'security, vulnerability')}<span style="font-size: 12px; color: var(--dim)">Issues open pre-filled on github.com. Nothing is posted without you.</span></div>
 <div style="display: flex; flex-direction: column; gap: 10px">${h('Your data')}<span style="font-size: 13px; line-height: 1.5; color: var(--muted)">Your stack (${c.p.stack.length} entries), triage statuses (${Object.keys(c.p.triage).length}) and notes live in this browser only. Export them to move machines or share with your team.</span>
 <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="btn btn-g" data-act="export-json" style="min-height: 40px; font-size: 13px">Export JSON</button><button type="button" class="btn btn-g" data-act="import-json" style="min-height: 40px; font-size: 13px">Import JSON</button><button type="button" class="btn" data-act="reset" style="min-height: 40px; font-size: 13px; border: 1px solid var(--crit); color: var(--crit-t)">Reset everything</button></div></div>
-<span class="mono" style="font-size: 11px; color: var(--dim)">watchdog v${esc(c.version)}</span></div>
-<div style="display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line)"><button type="button" class="btn btn-p" data-act="close-settings">Done</button></div></div></div>`
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line)"><span class="mono" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; color: var(--dim)"><a href="${REPO_URL}" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text2)">watchdog on ${icons.github}</a> at <a href="${REPO_URL}/releases/tag/v${esc(c.version)}" target="_blank" rel="noopener" title="Release notes for v${esc(c.version)}">v${esc(c.version)}</a></span><button type="button" class="btn btn-p" data-act="close-settings">Done</button></div></div></div>`
 }
 
 export function main(c: Ctx): string {

@@ -1,6 +1,6 @@
 [
   {
-    "name": "Government / CERT",
+    "name": "Governments / CERTs",
     "desc": "Official agencies and national CERTs. Exploitation status, national advisories and regulatory notices.",
     "color": "var(--blue)",
     "icon": "gov",
@@ -50,7 +50,7 @@
     ]
   },
   {
-    "name": "Vendor",
+    "name": "Vendors",
     "desc": "Security bulletins published by the makers of the software.",
     "color": "var(--high)",
     "icon": "vendor",
@@ -121,7 +121,7 @@
     ]
   },
   {
-    "name": "Advisory database",
+    "name": "Advisory databases",
     "desc": "Package-level databases with affected and fixed versions.",
     "color": "var(--lime)",
     "icon": "db",
@@ -164,7 +164,7 @@
     ]
   },
   {
-    "name": "Security vendor",
+    "name": "Security vendors",
     "desc": "Threat research from antivirus and security labs, shown as field reports.",
     "color": "var(--crit)",
     "icon": "secvendor",

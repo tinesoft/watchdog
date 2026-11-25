@@ -133,13 +133,13 @@ Threat types come from keywords and CWE ids, and are a hint rather than a verdic
 
 The sweep (`pnpm nx collect web`) merges these into one list of threats, and each source's result is shown on the Sources page.
 
-| Group             | Collected                                                                       | Listed, link only                                       |
-| ----------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Government / CERT | CISA KEV, NIST NVD, CERT-FR                                                     | CERT-EU, CSSF, CIRCL                                    |
-| Vendor            | Microsoft MSRC, Spring, Jenkins, Node.js                                        | Oracle, OpenJDK, NGINX, Palo Alto Networks, Sonar       |
-| Advisory database | GitHub Advisory Database                                                        | OSV.dev (used live by Scan), Snyk, Docker Scout, GitLab |
-| Security vendor   | Kaspersky, ESET, Sophos, Sonatype, Microsoft Security Blog, Google Project Zero |                                                         |
-| Security news     | BleepingComputer, The Hacker News, SecurityWeek                                 |                                                         |
+| Group               | Collected                                                                       | Listed, link only                                       |
+| ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Governments / CERTs | CISA KEV, NIST NVD, CERT-FR                                                     | CERT-EU, CSSF, CIRCL                                    |
+| Vendor              | Microsoft MSRC, Spring, Jenkins, Node.js                                        | Oracle, OpenJDK, NGINX, Palo Alto Networks, Sonar       |
+| Advisory database   | GitHub Advisory Database                                                        | OSV.dev (used live by Scan), Snyk, Docker Scout, GitLab |
+| Security vendor     | Kaspersky, ESET, Sophos, Sonatype, Microsoft Security Blog, Google Project Zero |                                                         |
+| Security news       | BleepingComputer, The Hacker News, SecurityWeek                                 |                                                         |
 
 Link-only sources have no usable public feed, or block automated clients. They stay on the Sources page so the list is honest about what is and is not collected.
 

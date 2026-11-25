@@ -5,7 +5,15 @@ import { queryOsv } from '../lib/osv'
 import { registerServiceWorker } from './pwa'
 import { matchDeps, parseDeps, pendingAlerts } from '../lib/scan'
 import type { Dataset, FieldReport, SweepStatus, Threat, TriageStatus } from '../lib/types'
-import { acMatches, inboxOf as inbox, isListView, shell, stackHot, type Ctx } from './templates'
+import {
+  acMatches,
+  inboxOf as inbox,
+  isListView,
+  shell,
+  stackHot,
+  sweepText,
+  type Ctx,
+} from './templates'
 import {
   defaults,
   filtered,
@@ -74,6 +82,12 @@ function setFavicon(count: number, theme: Theme): void {
   const href = count > 0 ? faviconDataUri(ALARM_COLOR[theme], true) : calmFavicon
   if (faviconEl.getAttribute('href') !== href) faviconEl.setAttribute('href', href)
 }
+
+/** Keeps the "next in" countdown moving without re-rendering the page. */
+setInterval(() => {
+  const el = document.getElementById('wd-sweep')
+  if (el) el.innerHTML = sweepText(ctx())
+}, 30_000)
 
 function render(): void {
   const active = document.activeElement as HTMLInputElement | null

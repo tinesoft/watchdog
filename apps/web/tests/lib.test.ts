@@ -394,6 +394,7 @@ describe('collector: enrichment', () => {
     expect(categoryOf('x', undefined, 'stdlib')).toBe('languages')
     expect(categoryOf('Windows kernel flaw', undefined, 'Windows')).toBe('os')
     expect(categoryOf('Foo appliance', undefined, 'Foo')).toBe('tools')
+    expect(categoryOf('Malicious versions published to npm', 'npm', 'x')).toBe('supply')
     expect(categoryOf('x', 'PyPI', 'django')).toBe('packages')
     expect([severityOf(9), severityOf(7), severityOf(5)]).toEqual(['critical', 'high', 'medium'])
   })
