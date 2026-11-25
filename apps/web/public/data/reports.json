@@ -1,0 +1,60 @@
+{
+  "sample": true,
+  "collectedAt": null,
+  "items": [
+    {
+      "lab": "Kaspersky Securelist",
+      "key": "kaspersky",
+      "date": "2024-04",
+      "title": "The xz backdoor story",
+      "summary": "Analysis of the liblzma backdoor: how the malicious build step was hidden and how it hooked into sshd.",
+      "cves": ["CVE-2024-3094"],
+      "url": "https://securelist.com/"
+    },
+    {
+      "lab": "Google Project Zero",
+      "key": "pz",
+      "date": "2024-11",
+      "title": "From Naptime to Big Sleep",
+      "summary": "An AI agent found a previously unknown memory-safety bug in SQLite before it reached a release.",
+      "cves": [],
+      "url": "https://googleprojectzero.blogspot.com/"
+    },
+    {
+      "lab": "Sophos",
+      "key": "sophos",
+      "date": "2024-10",
+      "title": "Pacific Rim",
+      "summary": "A years-long investigation into state-backed groups targeting perimeter firewalls, Sophos devices included.",
+      "cves": ["CVE-2020-12271", "CVE-2022-1040"],
+      "url": "https://www.sophos.com/en-us/news/category/threat-research"
+    },
+    {
+      "lab": "ESET WeLiveSecurity",
+      "key": "eset",
+      "date": "2024-05",
+      "title": "Ebury is alive but unseen",
+      "summary": "The Linux SSH botnet has compromised hundreds of thousands of servers and moved into financial theft.",
+      "cves": [],
+      "url": "https://www.welivesecurity.com/"
+    },
+    {
+      "lab": "Microsoft Security Blog",
+      "key": "microsoft",
+      "date": "2024-01",
+      "title": "Midnight Blizzard: guidance for responders",
+      "summary": "How a nation-state actor used password spraying and OAuth apps against Microsoft, with detection advice.",
+      "cves": [],
+      "url": "https://www.microsoft.com/en-us/security/blog/"
+    },
+    {
+      "lab": "Kaspersky Securelist",
+      "key": "kaspersky",
+      "date": "2023-12",
+      "title": "Operation Triangulation: the last (hardware) mystery",
+      "summary": "The iOS zero-click chain behind Triangulation, including an undocumented hardware feature used to bypass memory protection.",
+      "cves": ["CVE-2023-32434", "CVE-2023-38606", "CVE-2023-41990"],
+      "url": "https://securelist.com/"
+    }
+  ]
+}

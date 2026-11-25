@@ -1,14 +1,12 @@
 ---
+import Base from '../layouts/Base.astro'
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>watchdog</title>
-  </head>
-  <body>
-    <h1>watchdog</h1>
-  </body>
-</html>
+<Base>
+  <div id="app"></div>
+  <div id="wd-toast" role="status" aria-live="polite"></div>
+  <noscript>watchdog needs JavaScript to show and triage threats.</noscript>
+  <script>
+    import '../scripts/main'
+  </script>
+</Base>

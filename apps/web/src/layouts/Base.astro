@@ -1,0 +1,38 @@
+---
+import '../styles/fonts.css'
+import '../styles/design.css'
+import '../styles/global.css'
+
+interface Props {
+  title?: string
+}
+const { title = 'watchdog' } = Astro.props
+const base = import.meta.env.BASE_URL
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Which public vulnerabilities affect the software you run." />
+    <meta name="theme-color" content="#07090C" />
+    <title>{title}</title>
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <script is:inline>
+      // Set the theme before first paint so a light-theme user never sees a dark flash.
+      try {
+        const s = JSON.parse(localStorage.getItem('watchdog:v1') || '{}')
+        const t =
+          s.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        document.documentElement.style.colorScheme = t
+        document.documentElement.dataset.theme = t
+      } catch {
+        /* no stored theme: fall back to the system one in main.ts */
+      }
+    </script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

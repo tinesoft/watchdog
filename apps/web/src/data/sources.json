@@ -1,0 +1,187 @@
+[
+  {
+    "name": "Government / CERT",
+    "desc": "Official agencies and national CERTs. Exploitation status, national advisories and regulatory notices.",
+    "color": "var(--blue)",
+    "icon": "gov",
+    "items": [
+      {
+        "name": "CISA Known Exploited Vulnerabilities",
+        "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "host": "cisa.gov"
+      },
+      {
+        "name": "CERT-EU security advisories",
+        "url": "https://cert.europa.eu/publications/security-advisories/",
+        "host": "cert.europa.eu"
+      },
+      {
+        "name": "CSSF ICT communiqués (Luxembourg)",
+        "url": "https://www.cssf.lu/en/",
+        "host": "cssf.lu"
+      },
+      {
+        "name": "CIRCL vulnerability lookup (Luxembourg)",
+        "url": "https://vulnerability.circl.lu/",
+        "host": "vulnerability.circl.lu"
+      },
+      {
+        "name": "NIST National Vulnerability Database",
+        "url": "https://nvd.nist.gov/",
+        "host": "nvd.nist.gov"
+      },
+      {
+        "name": "CERT-FR (ANSSI) avis",
+        "url": "https://www.cert.ssi.gouv.fr/",
+        "host": "cert.ssi.gouv.fr"
+      }
+    ]
+  },
+  {
+    "name": "Vendor",
+    "desc": "Security bulletins published by the makers of the software.",
+    "color": "var(--high)",
+    "icon": "vendor",
+    "items": [
+      {
+        "name": "Oracle Critical Patch Updates",
+        "url": "https://www.oracle.com/security-alerts/",
+        "host": "oracle.com"
+      },
+      {
+        "name": "OpenJDK vulnerability advisories",
+        "url": "https://openjdk.org/groups/vulnerability/advisories/",
+        "host": "openjdk.org"
+      },
+      {
+        "name": "Jenkins security advisories",
+        "url": "https://www.jenkins.io/security/advisories/",
+        "host": "jenkins.io"
+      },
+      {
+        "name": "Node.js security releases",
+        "url": "https://nodejs.org/en/blog/vulnerability",
+        "host": "nodejs.org"
+      },
+      {
+        "name": "Sonar community security advisories",
+        "url": "https://community.sonarsource.com/",
+        "host": "community.sonarsource.com"
+      },
+      {
+        "name": "Microsoft Security Response Center",
+        "url": "https://msrc.microsoft.com/update-guide",
+        "host": "msrc.microsoft.com"
+      },
+      {
+        "name": "Spring security advisories",
+        "url": "https://spring.io/security",
+        "host": "spring.io"
+      },
+      {
+        "name": "NGINX security advisories",
+        "url": "https://nginx.org/en/security_advisories.html",
+        "host": "nginx.org"
+      },
+      {
+        "name": "Palo Alto Networks advisories",
+        "url": "https://security.paloaltonetworks.com/",
+        "host": "security.paloaltonetworks.com"
+      }
+    ]
+  },
+  {
+    "name": "Advisory database",
+    "desc": "Package-level databases with affected and fixed versions.",
+    "color": "var(--lime)",
+    "icon": "db",
+    "items": [
+      {
+        "name": "GitHub Advisory Database",
+        "url": "https://github.com/advisories",
+        "host": "github.com"
+      },
+      {
+        "name": "OSV.dev",
+        "url": "https://osv.dev/",
+        "host": "osv.dev"
+      },
+      {
+        "name": "Snyk Vulnerability DB",
+        "url": "https://security.snyk.io/",
+        "host": "security.snyk.io"
+      },
+      {
+        "name": "Docker Scout",
+        "url": "https://scout.docker.com/",
+        "host": "scout.docker.com"
+      },
+      {
+        "name": "GitLab Advisory Database",
+        "url": "https://advisories.gitlab.com/",
+        "host": "advisories.gitlab.com"
+      }
+    ]
+  },
+  {
+    "name": "Security vendor",
+    "desc": "Threat research from antivirus and security labs, shown as field reports.",
+    "color": "var(--crit)",
+    "icon": "secvendor",
+    "items": [
+      {
+        "name": "Sophos threat research",
+        "url": "https://www.sophos.com/en-us/news/category/threat-research",
+        "host": "sophos.com"
+      },
+      {
+        "name": "Kaspersky Securelist",
+        "url": "https://securelist.com/",
+        "host": "securelist.com"
+      },
+      {
+        "name": "ESET WeLiveSecurity",
+        "url": "https://www.welivesecurity.com/",
+        "host": "welivesecurity.com"
+      },
+      {
+        "name": "Sonatype research",
+        "url": "https://www.sonatype.com/blog",
+        "host": "sonatype.com"
+      },
+      {
+        "name": "Microsoft Security Blog",
+        "url": "https://www.microsoft.com/en-us/security/blog/",
+        "host": "microsoft.com"
+      },
+      {
+        "name": "Google Project Zero",
+        "url": "https://googleprojectzero.blogspot.com/",
+        "host": "googleprojectzero.blogspot.com"
+      }
+    ]
+  },
+  {
+    "name": "Security news",
+    "desc": "News coverage of new campaigns and disclosures.",
+    "color": "var(--med)",
+    "icon": "news",
+    "items": [
+      {
+        "name": "BleepingComputer",
+        "url": "https://www.bleepingcomputer.com/",
+        "host": "bleepingcomputer.com"
+      },
+      {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/",
+        "host": "thehackernews.com"
+      },
+      {
+        "name": "SecurityWeek",
+        "url": "https://www.securityweek.com/",
+        "host": "securityweek.com"
+      }
+    ]
+  }
+]

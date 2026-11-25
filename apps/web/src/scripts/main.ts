@@ -1,0 +1,406 @@
+import pkg from '../../package.json'
+import { issueUrl, toCsv, toMarkdown } from '../lib/export'
+import type { Dataset, FieldReport, Threat, TriageStatus } from '../lib/types'
+import { acMatches, isListView, inboxOf, shell, type Ctx } from './templates'
+import {
+  defaults,
+  filtered,
+  inView,
+  KEY,
+  load,
+  rowsOf,
+  sanitize,
+  save,
+  type AlertLevel,
+  type Data,
+  type Ephemeral,
+  type Persisted,
+  type Theme,
+  type View,
+} from './state'
+
+const root = document.getElementById('app')!
+const toastEl = document.getElementById('wd-toast')!
+const base = import.meta.env.BASE_URL
+
+let p: Persisted = load(localStorage)
+const e: Ephemeral = {
+  view: 'inbox',
+  sel: null,
+  cat: 'all',
+  exp: false,
+  q: '',
+  lab: 'all',
+  acQuery: '',
+  acIndex: 0,
+  alertsOpen: false,
+  settingsOpen: false,
+  offline: false,
+}
+const data: Data = { threats: null, reports: null }
+
+const systemTheme = (): Theme =>
+  matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+const theme = (): Theme => p.theme ?? systemTheme()
+
+function ctx(): Ctx {
+  return {
+    p,
+    e,
+    data,
+    rows: rowsOf(data.threats?.items ?? [], p),
+    now: new Date(),
+    theme: theme(),
+    version: pkg.version,
+  }
+}
+
+function render(): void {
+  const active = document.activeElement as HTMLInputElement | null
+  const id = active?.id
+  const caret =
+    id && 'selectionStart' in active! ? [active!.selectionStart, active!.selectionEnd] : null
+  root.innerHTML = shell(ctx())
+  document.documentElement.style.colorScheme = theme()
+  if (id) {
+    const el = document.getElementById(id) as HTMLInputElement | null
+    if (el) {
+      el.focus()
+      if (caret && caret[0] != null) el.setSelectionRange(caret[0], caret[1] ?? caret[0])
+    }
+  }
+}
+
+const persist = () => save(localStorage, p)
+const commit = () => {
+  persist()
+  render()
+}
+
+let toastTimer = 0
+function toast(msg: string): void {
+  toastEl.textContent = msg
+  toastEl.classList.add('on')
+  clearTimeout(toastTimer)
+  toastTimer = window.setTimeout(() => toastEl.classList.remove('on'), 2200)
+}
+
+async function copy(text: string, what = 'Copied'): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+    toast(what)
+  } catch {
+    toast('Copy is blocked in this browser')
+  }
+}
+
+function download(name: string, mime: string, body: string): void {
+  const url = URL.createObjectURL(new Blob([body], { type: mime }))
+  const a = Object.assign(document.createElement('a'), { href: url, download: name })
+  a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+const linkFor = (id: string) => `${location.origin}${base}#${id}`
+const selected = () => ctx().rows.find(r => r.id === e.sel)
+
+function addToStack(name: string): void {
+  const n = name.trim().toLowerCase()
+  if (!n) return
+  if (!p.stack.includes(n)) p = { ...p, stack: [...p.stack, n] }
+  e.acQuery = ''
+  e.acIndex = 0
+  commit()
+}
+
+function go(view: View): void {
+  e.view = view
+  e.cat = 'all'
+  e.alertsOpen = false
+  render()
+  if (location.hash) history.replaceState(null, '', location.pathname + location.search)
+}
+
+function setTriage(status: TriageStatus): void {
+  const v = selected()
+  if (!v) return
+  const triage = { ...p.triage }
+  if (triage[v.id] === status) delete triage[v.id]
+  else triage[v.id] = status
+  p = { ...p, triage }
+  commit()
+}
+
+function importJson(): void {
+  const input = Object.assign(document.createElement('input'), {
+    type: 'file',
+    accept: 'application/json,.json',
+  })
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    try {
+      p = sanitize(JSON.parse(await file.text()))
+      commit()
+      toast('Imported')
+    } catch {
+      toast('That file is not a watchdog export')
+    }
+  }
+  input.click()
+}
+
+const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
+  go: a => go(a as View),
+  pick: a => {
+    e.sel = a
+    render()
+  },
+  'close-detail': () => {
+    e.sel = null
+    render()
+  },
+  cat: a => {
+    e.cat = a as Ephemeral['cat']
+    render()
+  },
+  exploited: () => {
+    e.exp = !e.exp
+    render()
+  },
+  'clear-inbox': () => {
+    p = { ...p, seen: [...new Set([...p.seen, ...(data.threats?.items ?? []).map(t => t.id)])] }
+    e.alertsOpen = false
+    commit()
+  },
+  triage: a => setTriage(a as TriageStatus),
+  copy: a => void copy(a, 'Command copied'),
+  'copy-md': () => {
+    const v = selected()
+    if (v) void copy(toMarkdown(v, linkFor(v.id)), 'Markdown copied')
+  },
+  'copy-link': () => {
+    const v = selected()
+    if (v) void copy(linkFor(v.id), 'Link copied')
+  },
+  'add-stack': () => {
+    const v = selected()
+    if (!v) return
+    addToStack(v.pkg === 'stdlib' ? v.product : v.pkg)
+    toast('Added to your stack')
+  },
+  issue: () => {
+    const v = selected()
+    if (!v) return
+    const url = issueUrl(p.repo, p.labels, v, linkFor(v.id))
+    if (!url) {
+      toast('Set a repository (owner/repo) in Settings first')
+      e.settingsOpen = true
+      render()
+      return
+    }
+    window.open(url, '_blank', 'noopener')
+  },
+  'export-csv': () => {
+    const c = ctx()
+    download('watchdog-threats.csv', 'text/csv', toCsv(filtered(inView(c.rows, e.view), e)))
+  },
+  'export-json': () =>
+    download('watchdog-state.json', 'application/json', JSON.stringify(p, null, 2)),
+  'import-json': importJson,
+  reset: () => {
+    if (!confirm('Erase your stack, triage statuses, notes and settings from this browser?')) return
+    p = defaults()
+    localStorage.removeItem(KEY)
+    render()
+  },
+  theme: () => {
+    p = { ...p, theme: theme() === 'dark' ? 'light' : 'dark' }
+    commit()
+  },
+  'set-theme': a => {
+    p = { ...p, theme: a as Theme }
+    commit()
+  },
+  side: () => {
+    p = { ...p, sideCollapsed: !p.sideCollapsed }
+    commit()
+  },
+  preset: a => {
+    p = { ...p, stack: p.stack.includes(a) ? p.stack.filter(x => x !== a) : [...p.stack, a] }
+    commit()
+  },
+  'ac-pick': a => addToStack(a),
+  'ac-add': () => {
+    const m = acMatches(ctx())
+    addToStack(m.length ? m[Math.min(e.acIndex, m.length - 1)]!.label : e.acQuery)
+  },
+  'stack-remove': a => {
+    p = { ...p, stack: p.stack.filter(x => x !== a) }
+    commit()
+  },
+  lab: a => {
+    e.lab = a
+    render()
+  },
+  'open-cve': a => {
+    e.sel = a
+    e.view = 'all'
+    e.cat = 'all'
+    render()
+  },
+  'open-alert': a => {
+    e.sel = a
+    e.view = 'all'
+    e.alertsOpen = false
+    render()
+  },
+  'toggle-alerts': () => {
+    e.alertsOpen = !e.alertsOpen
+    e.settingsOpen = false
+    render()
+  },
+  'alerts-on': () => {
+    p = { ...p, alertsOn: !p.alertsOn }
+    commit()
+  },
+  'alert-level': a => {
+    p = { ...p, alertLevel: a as AlertLevel }
+    commit()
+  },
+  'open-settings': () => {
+    e.settingsOpen = true
+    e.alertsOpen = false
+    render()
+  },
+  'close-settings': () => {
+    e.settingsOpen = false
+    render()
+  },
+  scrim: (_a, el) => {
+    if (el === lastClickTarget) {
+      e.settingsOpen = false
+      render()
+    }
+  },
+}
+
+let lastClickTarget: EventTarget | null = null
+
+root.addEventListener('click', ev => {
+  lastClickTarget = ev.target
+  const el = (ev.target as HTMLElement).closest<HTMLElement>('[data-act]')
+  if (!el) return
+  const act = actions[el.dataset.act ?? '']
+  if (!act) return
+  if (el.tagName === 'A' && el.dataset.act !== 'copy') ev.preventDefault()
+  act(el.dataset.arg ?? '', el)
+})
+
+root.addEventListener('input', ev => {
+  const el = ev.target as HTMLInputElement
+  switch (el.dataset.in) {
+    case 'q':
+      e.q = el.value
+      if (!isListView(e.view)) e.view = 'all'
+      render()
+      break
+    case 'ac':
+      e.acQuery = el.value
+      e.acIndex = 0
+      render()
+      break
+    case 'note': {
+      const v = selected()
+      if (v) {
+        const notes = { ...p.notes }
+        if (el.value) notes[v.id] = el.value
+        else delete notes[v.id]
+        p = { ...p, notes }
+        persist()
+      }
+      break
+    }
+    case 'repo':
+      p = { ...p, repo: el.value }
+      persist()
+      break
+    case 'labels':
+      p = { ...p, labels: el.value }
+      persist()
+      break
+  }
+})
+
+root.addEventListener('keydown', ev => {
+  const el = ev.target as HTMLElement
+  if (el.dataset.in !== 'ac') return
+  const m = acMatches(ctx())
+  if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+    ev.preventDefault()
+    if (!m.length) return
+    e.acIndex =
+      (Math.min(e.acIndex, m.length - 1) + (ev.key === 'ArrowDown' ? 1 : m.length - 1)) % m.length
+    render()
+  } else if (ev.key === 'Enter') {
+    ev.preventDefault()
+    addToStack(m.length ? m[Math.min(e.acIndex, m.length - 1)]!.label : e.acQuery)
+  } else if (ev.key === 'Escape') {
+    e.acQuery = ''
+    e.acIndex = 0
+    render()
+  }
+})
+
+document.addEventListener('keydown', ev => {
+  const t = ev.target as HTMLElement
+  const typing = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement
+  if (ev.key === '/' && !typing && !ev.metaKey && !ev.ctrlKey) {
+    ev.preventDefault()
+    document.getElementById('wd-q')?.focus()
+  } else if (ev.key === 'Escape' && !(typing && t.dataset.in === 'ac')) {
+    if (e.settingsOpen || e.alertsOpen) {
+      e.settingsOpen = false
+      e.alertsOpen = false
+      render()
+    }
+  }
+})
+
+function applyHash(): void {
+  const id = decodeURIComponent(location.hash.slice(1))
+  if (/^[\w-]+$/.test(id) && data.threats?.items.some(t => t.id === id)) {
+    e.sel = id
+    e.view = 'all'
+  }
+}
+addEventListener('hashchange', () => {
+  applyHash()
+  render()
+})
+
+async function fetchDataset<T>(name: string): Promise<Dataset<T> | null> {
+  try {
+    const res = await fetch(`${base}data/${name}.json`)
+    if (!res.ok) throw new Error(String(res.status))
+    return (await res.json()) as Dataset<T>
+  } catch {
+    e.offline = true
+    return null
+  }
+}
+
+async function boot(): Promise<void> {
+  render()
+  const [threats, reports] = await Promise.all([
+    fetchDataset<Threat>('threats'),
+    fetchDataset<FieldReport>('reports'),
+  ])
+  data.threats = threats ?? { sample: false, collectedAt: null, items: [] }
+  data.reports = reports ?? { sample: false, collectedAt: null, items: [] }
+  applyHash()
+  if (e.view === 'inbox' && inboxOf(ctx().rows).length === 0 && !e.sel) e.view = 'inbox'
+  render()
+}
+
+void boot()
