@@ -51,6 +51,7 @@ export interface Ephemeral {
   acIndex: number
   alertsOpen: boolean
   settingsOpen: boolean
+  mobileNav: boolean
   offline: boolean
   scanText: string
   scanFile: string

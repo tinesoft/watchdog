@@ -48,6 +48,7 @@ const e: Ephemeral = {
   acIndex: 0,
   alertsOpen: false,
   settingsOpen: false,
+  mobileNav: false,
   offline: false,
   scanText: '',
   scanFile: '',
@@ -87,6 +88,8 @@ function setFavicon(count: number, theme: Theme): void {
 setInterval(() => {
   const el = document.getElementById('wd-sweep')
   if (el) el.innerHTML = sweepText(ctx())
+  const drawer = document.querySelector('.wd-sweep-text')
+  if (drawer) drawer.innerHTML = sweepText(ctx())
 }, 30_000)
 
 function render(): void {
@@ -153,6 +156,7 @@ function go(view: View): void {
   e.view = view
   e.cat = 'all'
   e.alertsOpen = false
+  e.mobileNav = false
   render()
   if (location.hash) history.replaceState(null, '', location.pathname + location.search)
 }
@@ -357,6 +361,11 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     p = { ...p, theme: a as Theme }
     commit()
   },
+  'toggle-nav': () => {
+    e.mobileNav = !e.mobileNav
+    e.alertsOpen = false
+    render()
+  },
   side: () => {
     p = { ...p, sideCollapsed: !p.sideCollapsed }
     commit()
@@ -405,6 +414,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   'open-settings': () => {
     e.settingsOpen = true
     e.alertsOpen = false
+    e.mobileNav = false
     render()
   },
   'close-settings': () => {
@@ -516,9 +526,10 @@ document.addEventListener('keydown', ev => {
     ev.preventDefault()
     document.getElementById('wd-q')?.focus()
   } else if (ev.key === 'Escape' && !(typing && t.dataset.in === 'ac')) {
-    if (e.settingsOpen || e.alertsOpen) {
+    if (e.settingsOpen || e.alertsOpen || e.mobileNav) {
       e.settingsOpen = false
       e.alertsOpen = false
+      e.mobileNav = false
       render()
     }
   }

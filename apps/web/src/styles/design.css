@@ -919,6 +919,116 @@ a:hover {
     transform: rotate(8deg);
   }
 }
+.only-mobile,
+.drawer-extra,
+.nav-backdrop {
+  display: none;
+}
+@media (max-width: 760px) {
+  .only-mobile {
+    display: inline-flex;
+  }
+  .hide-mobile {
+    display: none !important;
+  }
+  .topbar {
+    position: sticky !important;
+    top: 0;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    min-height: 60px !important;
+  }
+  .brand {
+    flex: none !important;
+  }
+  .brand-text {
+    display: none;
+  }
+  .topsearch {
+    flex: 1 1 auto !important;
+    max-width: none !important;
+    margin: 0 auto;
+  }
+  .topactions {
+    margin-left: 0 !important;
+    gap: 4px !important;
+  }
+  .side,
+  .side-collapsed {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    bottom: 0;
+    z-index: 40;
+    flex: none !important;
+    width: 280px;
+    max-width: 86vw !important;
+    overflow-y: auto;
+    background: var(--bg) !important;
+    border-right: 1px solid var(--line2);
+    padding: 12px !important;
+    transform: translateX(-105%);
+    transition: transform 0.25s ease;
+    box-shadow: 20px 0 60px -20px rgba(0, 0, 0, 0.6);
+  }
+  .side-open {
+    transform: none;
+  }
+  .side-top {
+    display: none !important;
+  }
+  .side-collapsed .nav-text,
+  .side-collapsed .n {
+    display: inline !important;
+  }
+  .side-collapsed .sec-label {
+    display: block !important;
+  }
+  .side-collapsed .side-card {
+    display: flex !important;
+  }
+  .side-collapsed .sec-div,
+  .side-collapsed .side-mini {
+    display: none !important;
+  }
+  .side-collapsed .nav {
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
+  .side-collapsed .n-hot,
+  .side-collapsed .n-new {
+    position: static;
+    margin-left: auto;
+    box-shadow: none;
+  }
+  .drawer-extra {
+    display: flex;
+  }
+  .nav-backdrop {
+    all: unset;
+    display: block;
+    position: fixed;
+    inset: 60px 0 0 0;
+    z-index: 35;
+    background: rgba(4, 6, 8, 0.5);
+  }
+  .mainpane {
+    padding: 16px 14px 40px !important;
+  }
+  .lg {
+    position: static;
+  }
+  .lg-tip {
+    left: 0;
+    right: auto;
+    width: min(250px, calc(100vw - 48px));
+  }
+  .lg-r .lg-tip {
+    left: auto;
+    right: 0;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
