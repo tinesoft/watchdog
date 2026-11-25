@@ -6,7 +6,10 @@ if (!range) {
   console.error('usage: node tools/check-linear.mjs <base>..<head>')
   process.exit(2)
 }
-const merges = execFileSync('git', ['rev-list', '--merges', range], { encoding: 'utf8' })
+// A branch's first push has an all-zero "before" sha: check the whole history up to the head.
+const ZERO = /^0{40}\.\./
+const target = ZERO.test(range) ? range.replace(ZERO, '') : range
+const merges = execFileSync('git', ['rev-list', '--merges', target], { encoding: 'utf8' })
   .split('\n')
   .filter(Boolean)
 if (merges.length) {
