@@ -9,6 +9,7 @@
 
 [![CI](https://github.com/tinesoft/watchdog/actions/workflows/ci.yml/badge.svg)](https://github.com/tinesoft/watchdog/actions/workflows/ci.yml)
 [![Deploy](https://github.com/tinesoft/watchdog/actions/workflows/deploy.yml/badge.svg)](https://github.com/tinesoft/watchdog/actions/workflows/deploy.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Astro](https://img.shields.io/badge/Astro-static-BC52EE.svg)](https://astro.build)
 [![PWA](https://img.shields.io/badge/PWA-works%20offline-5A0FC8.svg)](#-install-it)
 
@@ -203,4 +204,4 @@ Use the words in [`GLOSSARY.md`](GLOSSARY.md): a **Threat** is one vulnerability
 
 ## 📄 License
 
-No license has been chosen yet, so all rights are reserved until one is added.
+[MIT](LICENSE) © 2026 Tine Kondo.
