@@ -407,18 +407,19 @@ describe('collector: markdown', () => {
     ))
 })
 
-import { ALARM_COLOR, badgeLabel, faviconDataUri } from '../src/lib/favicon'
+import { ALARM_COLOR, faviconDataUri } from '../src/lib/favicon'
 describe('favicon', () => {
+  const svg = (dot: boolean) => decodeURIComponent(faviconDataUri(ALARM_COLOR.dark, dot))
   it('draws the tab icon in the alarm colour', () => {
-    const uri = decodeURIComponent(faviconDataUri(ALARM_COLOR.dark))
-    expect(uri.startsWith('data:image/svg+xml,<svg')).toBe(true)
-    expect(uri).toContain('#FF5A4E')
-    expect(uri).not.toContain('#C6FF3D')
-    expect(uri).not.toContain('<text')
+    expect(svg(false).startsWith('data:image/svg+xml,<svg')).toBe(true)
+    expect(svg(false)).toContain('#FF5A4E')
+    expect(svg(false)).not.toContain('#C6FF3D')
   })
-  it('adds the sidebar count as a badge, and caps it at 9+', () => {
-    expect(decodeURIComponent(faviconDataUri('#FF5A4E', 3))).toMatch(/<text[^>]*>3<\/text>/)
-    expect(decodeURIComponent(faviconDataUri('#FF5A4E', 12))).toMatch(/<text[^>]*>9\+<\/text>/)
-    expect([badgeLabel(1), badgeLabel(9), badgeLabel(10)]).toEqual(['1', '9', '9+'])
+  it('adds an alert dot without moving or shrinking the dog', () => {
+    const calm = svg(false)
+    const alarm = svg(true)
+    expect(alarm).toContain(calm.replace('</svg>', ''))
+    expect(alarm).not.toContain('<text')
+    expect(alarm).not.toContain('scale(')
   })
 })
