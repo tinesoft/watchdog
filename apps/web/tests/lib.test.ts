@@ -407,12 +407,18 @@ describe('collector: markdown', () => {
     ))
 })
 
-import { ALARM_COLOR, faviconDataUri } from '../src/lib/favicon'
+import { ALARM_COLOR, badgeLabel, faviconDataUri } from '../src/lib/favicon'
 describe('favicon', () => {
   it('draws the tab icon in the alarm colour', () => {
     const uri = decodeURIComponent(faviconDataUri(ALARM_COLOR.dark))
     expect(uri.startsWith('data:image/svg+xml,<svg')).toBe(true)
     expect(uri).toContain('#FF5A4E')
     expect(uri).not.toContain('#C6FF3D')
+    expect(uri).not.toContain('<text')
+  })
+  it('adds the sidebar count as a badge, and caps it at 9+', () => {
+    expect(decodeURIComponent(faviconDataUri('#FF5A4E', 3))).toMatch(/<text[^>]*>3<\/text>/)
+    expect(decodeURIComponent(faviconDataUri('#FF5A4E', 12))).toMatch(/<text[^>]*>9\+<\/text>/)
+    expect([badgeLabel(1), badgeLabel(9), badgeLabel(10)]).toEqual(['1', '9', '9+'])
   })
 })

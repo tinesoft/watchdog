@@ -68,10 +68,10 @@ function ctx(): Ctx {
 const faviconEl = document.getElementById('wd-favicon') as HTMLLinkElement | null
 const calmFavicon = faviconEl?.getAttribute('href') ?? ''
 
-/** The tab icon takes the dog's alarm colour while a new exploited threat matches the stack. */
-function setFavicon(alarm: boolean, theme: Theme): void {
+/** The tab icon takes the dog's alarm colour, and the sidebar's count, while a new exploited threat matches the stack. */
+function setFavicon(count: number, theme: Theme): void {
   if (!faviconEl) return
-  const href = alarm ? faviconDataUri(ALARM_COLOR[theme]) : calmFavicon
+  const href = count > 0 ? faviconDataUri(ALARM_COLOR[theme], count) : calmFavicon
   if (faviconEl.getAttribute('href') !== href) faviconEl.setAttribute('href', href)
 }
 
@@ -82,7 +82,7 @@ function render(): void {
     id && 'selectionStart' in active! ? [active!.selectionStart, active!.selectionEnd] : null
   const c = ctx()
   root.innerHTML = shell(c)
-  setFavicon(stackHot(c.rows) > 0, c.theme)
+  setFavicon(stackHot(c.rows), c.theme)
   document.documentElement.style.colorScheme = theme()
   if (id) {
     const el = document.getElementById(id) as HTMLInputElement | null
