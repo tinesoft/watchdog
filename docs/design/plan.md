@@ -102,3 +102,15 @@ Each step is tested and committed in conventional-commit style on `develop`.
 - NVD rate limits. An API key is optional and read from a repository secret.
 - Heuristic threat type and category are approximate. Overrides cover notable CVEs.
 - Data size grows. The size gate catches it before deploy.
+
+## 9. Addendum: found while porting the design (2026-11-25)
+
+Items in the design that section 2 did not list. All are in the MVP.
+
+- **Header:** a "swept 2 h ago · next in 22h00" pill (from the dataset's `collectedAt` and the cron hours), and a `/` shortcut that focuses search.
+- **Threat list:** "Export CSV" of the current filtered list (spreadsheet-formula-safe), and the "Key" legend explaining the threat-type icons and severity bands.
+- **Detail panel:** per-Threat notes, Copy command, "Copy as Markdown", "Copy link" (deep link `#CVE-…`) and "Add to my stack".
+- **Alerts panel:** "Mark all as read" and an RSS feed link. The MVP therefore publishes `feed.xml`, an RSS 2.0 feed of the newest Mine-agnostic Threats (Exploited and critical first), written by the Sweep.
+- **Scan dependencies:** the design accepts `package.json`, `package-lock.json`, `requirements.txt`, `go.mod`, `Cargo.lock`, `Gemfile.lock`, `composer.lock` and `pom.xml`, and has a "Check with OSV.dev" option that sends only package names and versions to `api.osv.dev`. This is the one runtime call to another origin. It is opt-in and off by default, and a Scan without it matches only the collected Threats. ADR 0001 is amended accordingly.
+- **Settings:** "Reset everything", and the version shown at the bottom.
+- **Copy mismatch:** the design says the dog patrols "every morning at 06:00". The app says 07:00 and 14:00 UTC, which is what runs.
