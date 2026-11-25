@@ -460,10 +460,53 @@ ${r.cves.length ? `<div style="display: flex; flex-wrap: wrap; gap: 6px; align-i
     .join('')}</div>`
 }
 
-// ---- scan (full behaviour lands with the Scan step) ----------------------
+// ---- scan ---------------------------------------------------------------
 
-export function scanView(): string {
-  return `<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Scan dependencies</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Drop a manifest or lockfile. watchdog checks every dependency against today’s feed, then tells you what to upgrade.</p></div>`
+const SAMPLE_SCAN =
+  '{\n  "dependencies": {\n    "next": "14.1.0",\n    "follow-redirects": "1.15.5",\n    "@modelcontextprotocol/inspector": "0.13.0"\n  }\n}'
+
+export function scanView(c: Ctx): string {
+  const s = c.e.scan
+  const critical = s
+    ? s.findings.filter(f => f.threats.some(t => t.severity === 'critical')).length
+    : 0
+  const osvOnly = s?.osv ?? []
+  const vulnerable = (s?.findings.length ?? 0) + osvOnly.length
+  const cmdBox = (text: string) =>
+    `<div class="cmd"><code>${esc(text)}</code><button type="button" data-act="copy" data-arg="${esc(text)}" class="mono" style="all: unset; cursor: pointer; border-left: 1px solid var(--line2); background: var(--surface); color: var(--text2); padding: 10px 12px; font: 600 12px 'JetBrains Mono', monospace">Copy</button></div>`
+  const results = !s
+    ? '<span style="color: var(--muted); font-size: 14px">Results show up here. Drop a file or paste its contents, then press <b>Sniff it</b>.</span>'
+    : `<div class="mono" style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; font-weight: 600"><span>${s.deps.length} deps scanned</span><span class="${vulnerable ? 'ic-high' : ''}">${vulnerable} vulnerable</span><span class="${critical ? 'ic-critical' : ''}">${critical} critical</span></div>
+${s.note ? `<span style="font-size: 13px; color: var(--muted)">${esc(s.note)}</span>` : ''}
+${s.findings
+  .map(
+    f => `<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line)"><div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center"><span class="mono" style="font-weight: 600; font-size: 14px">${esc(f.dep.name)} <span style="color: var(--dim)">${esc(f.dep.version)}</span></span>${f.target ? `<span class="mono" style="font-size: 12px">${esc(f.dep.eco)} → <span style="color: var(--lime)">${esc(f.target)}</span></span>` : ''}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">${f.threats.map(t => `<button type="button" class="sev sev-${t.severity}" data-act="open-cve" data-arg="${esc(t.id)}" style="all: unset; cursor: pointer; box-sizing: border-box" title="${esc(t.title)}"><span class="sev sev-${t.severity}">${esc(t.id)}</span></button>`).join('')}</div>${f.cmd ? cmdBox(f.cmd) : ''}</div>`,
+  )
+  .join('')}
+${osvOnly
+  .map(
+    h =>
+      `<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line)"><span class="mono" style="font-weight: 600; font-size: 14px">${esc(h.dep.name)} <span style="color: var(--dim)">${esc(h.dep.version)}</span> <span style="font-size: 11px; color: var(--dim)">via OSV.dev</span></span><div style="display: flex; flex-wrap: wrap; gap: 6px">${h.ids
+        .slice(0, 12)
+        .map(
+          id =>
+            `<a class="cvechip cvechip-feed" href="https://osv.dev/vulnerability/${encodeURIComponent(id)}" target="_blank" rel="noopener">${esc(id)}</a>`,
+        )
+        .join('')}</div></div>`,
+  )
+  .join('')}
+${vulnerable === 0 ? `<div style="border: 1px dashed var(--line2); border-radius: 12px; padding: 20px; text-align: center; color: var(--muted)"><b style="color: var(--text)">Clean.</b> Nothing known in these ${s.deps.length} dependencies.</div>` : ''}`
+  return `<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Scan dependencies</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Drop a manifest or lockfile. watchdog checks every dependency against today’s feed, then tells you what to upgrade.</p></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; align-items: start">
+<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<label for="wd-scan-file" data-drop style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 26px 16px; border: 1.5px dashed var(--line2); border-radius: 12px; color: var(--muted); cursor: pointer"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"></path></svg><b style="color: var(--text)">${c.e.scanFile ? esc(c.e.scanFile) : 'package.json'}</b><span class="mono" style="font-size: 11px; line-height: 1.6">package-lock.json · requirements.txt · go.mod · Cargo.lock · Gemfile.lock · composer.lock · pom.xml</span></label>
+<input id="wd-scan-file" data-in="scan-file" type="file" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none">
+<label for="wd-scan-text" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Dependency file contents</label>
+<textarea id="wd-scan-text" data-in="scan-text" rows="8" spellcheck="false" placeholder="${esc(SAMPLE_SCAN)}" style="width: 100%; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text2); padding: 12px; font: 400 13px 'JetBrains Mono', monospace; resize: vertical">${esc(c.e.scanText)}</textarea>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text2); min-height: 44px; cursor: pointer"><input type="checkbox" data-in="scan-osv" ${c.e.scanOsv ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--lime)">Check with OSV.dev</label><button type="button" class="btn btn-p" data-act="scan-run" style="margin-left: auto" ${c.e.scanBusy ? 'disabled' : ''}>${c.e.scanBusy ? 'Sniffing…' : 'Sniff it'}</button></div>
+<span style="font-size: 12px; color: var(--dim)">Files are read in your browser. Without the OSV box ticked nothing leaves it. With it, only package names, ecosystems and versions go to api.osv.dev.</span></div>
+<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 12px" aria-live="polite">${results}</div></div>`
 }
 
 // ---- settings -----------------------------------------------------------
@@ -490,7 +533,7 @@ export function main(c: Ctx): string {
   if (!c.data.threats) return '<p class="mono" style="color: var(--muted)">Loading the feed…</p>'
   switch (c.e.view) {
     case 'scan':
-      return scanView()
+      return scanView(c)
     case 'stack':
       return stackView(c)
     case 'reports':

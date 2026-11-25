@@ -1,5 +1,7 @@
 import { isMine } from '../lib/match'
 import { risk } from '../lib/risk'
+import type { Dep, Finding } from '../lib/scan'
+import type { OsvHit } from '../lib/osv'
 import type { Category, Dataset, FieldReport, Severity, Threat, TriageStatus } from '../lib/types'
 
 export type View =
@@ -19,6 +21,15 @@ export interface Persisted {
   labels: string
   alertsOn: boolean
   alertLevel: AlertLevel
+  /** Threat IDs already shown as a browser notification. */
+  notified: string[]
+}
+
+export interface ScanOutcome {
+  deps: Dep[]
+  findings: Finding[]
+  osv: OsvHit[] | null
+  note: string
 }
 
 export interface Ephemeral {
@@ -33,6 +44,11 @@ export interface Ephemeral {
   alertsOpen: boolean
   settingsOpen: boolean
   offline: boolean
+  scanText: string
+  scanFile: string
+  scanOsv: boolean
+  scanBusy: boolean
+  scan: ScanOutcome | null
 }
 
 export const KEY = 'watchdog:v1'
@@ -48,6 +64,7 @@ export const defaults = (): Persisted => ({
   labels: 'security',
   alertsOn: false,
   alertLevel: 'stack',
+  notified: [],
 })
 
 export function load(storage: Storage): Persisted {
@@ -97,6 +114,7 @@ export function sanitize(input: unknown): Persisted {
     alertsOn: o.alertsOn === true,
     alertLevel:
       o.alertLevel === 'exploited' || o.alertLevel === 'critical' ? o.alertLevel : 'stack',
+    notified: isStrings(o.notified) ? o.notified : [],
   }
 }
 

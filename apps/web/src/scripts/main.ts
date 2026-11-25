@@ -1,7 +1,9 @@
 import pkg from '../../package.json'
 import { issueUrl, toCsv, toMarkdown } from '../lib/export'
+import { queryOsv } from '../lib/osv'
+import { matchDeps, parseDeps, pendingAlerts } from '../lib/scan'
 import type { Dataset, FieldReport, Threat, TriageStatus } from '../lib/types'
-import { acMatches, isListView, inboxOf, shell, type Ctx } from './templates'
+import { acMatches, inboxOf as inbox, isListView, shell, type Ctx } from './templates'
 import {
   defaults,
   filtered,
@@ -11,6 +13,7 @@ import {
   rowsOf,
   sanitize,
   save,
+  alertList,
   type AlertLevel,
   type Data,
   type Ephemeral,
@@ -36,6 +39,11 @@ const e: Ephemeral = {
   alertsOpen: false,
   settingsOpen: false,
   offline: false,
+  scanText: '',
+  scanFile: '',
+  scanOsv: false,
+  scanBusy: false,
+  scan: null,
 }
 const data: Data = { threats: null, reports: null }
 
@@ -150,6 +158,105 @@ function importJson(): void {
   input.click()
 }
 
+async function runScan(): Promise<void> {
+  if (!e.scanText.trim()) {
+    toast('Drop a file or paste its contents first')
+    return
+  }
+  const deps = parseDeps(e.scanText, e.scanFile)
+  if (!deps.length) {
+    e.scan = {
+      deps: [],
+      findings: [],
+      osv: null,
+      note: 'No dependencies found. Is this one of the supported files?',
+    }
+    render()
+    return
+  }
+  const local = matchDeps(deps, data.threats?.items ?? [])
+  e.scan = {
+    deps,
+    findings: local,
+    osv: null,
+    note: `Checked against ${data.threats?.items.length ?? 0} threats in today’s feed.`,
+  }
+  if (e.scanOsv) {
+    e.scanBusy = true
+    render()
+    try {
+      const covered = new Set(local.map(f => `${f.dep.eco}:${f.dep.name}@${f.dep.version}`))
+      const hits = await queryOsv(deps)
+      e.scan = {
+        ...e.scan,
+        osv: hits.filter(h => !covered.has(`${h.dep.eco}:${h.dep.name}@${h.dep.version}`)),
+        note: `Checked against ${data.threats?.items.length ?? 0} threats in today’s feed and OSV.dev.`,
+      }
+    } catch {
+      e.scan = { ...e.scan, note: 'OSV.dev could not be reached, so this is today’s feed only.' }
+    }
+    e.scanBusy = false
+  }
+  render()
+}
+
+async function readScanFile(file: File): Promise<void> {
+  if (file.size > 5_000_000) {
+    toast('That file is too large to scan')
+    return
+  }
+  e.scanText = await file.text()
+  e.scanFile = file.name
+  e.scan = null
+  render()
+}
+
+/** One notification per new Mine Threat at the user's alert level, never repeated. */
+function notifyNew(): void {
+  if (!p.alertsOn || !('Notification' in window) || Notification.permission !== 'granted') return
+  const c = ctx()
+  const fresh = pendingAlerts(alertList(inbox(c.rows), p.alertLevel), p.notified)
+  if (!fresh.length) return
+  const top = fresh
+    .slice(0, 3)
+    .map(v => `${v.id}: ${v.title}`)
+    .join('\n')
+  const n = new Notification(
+    `watchdog: ${fresh.length} new ${fresh.length === 1 ? 'threat' : 'threats'} in your stack`,
+    { body: top, icon: `${base}favicon.svg`, tag: 'watchdog-alerts' },
+  )
+  n.onclick = () => {
+    focus()
+    e.view = 'stack-feed'
+    render()
+  }
+  p = { ...p, notified: [...new Set([...p.notified, ...fresh.map(v => v.id)])] }
+  persist()
+}
+
+async function toggleAlertsOn(): Promise<void> {
+  if (p.alertsOn) {
+    p = { ...p, alertsOn: false }
+    commit()
+    return
+  }
+  if (!('Notification' in window)) {
+    toast('This browser has no notifications')
+    return
+  }
+  const perm =
+    Notification.permission === 'default'
+      ? await Notification.requestPermission()
+      : Notification.permission
+  if (perm !== 'granted') {
+    toast('Notifications are blocked for this site')
+    return
+  }
+  p = { ...p, alertsOn: true }
+  commit()
+  notifyNew()
+}
+
 const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   go: a => go(a as View),
   pick: a => {
@@ -260,13 +367,12 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     e.settingsOpen = false
     render()
   },
-  'alerts-on': () => {
-    p = { ...p, alertsOn: !p.alertsOn }
-    commit()
-  },
+  'alerts-on': () => void toggleAlertsOn(),
+  'scan-run': () => void runScan(),
   'alert-level': a => {
     p = { ...p, alertLevel: a as AlertLevel }
     commit()
+    notifyNew()
   },
   'open-settings': () => {
     e.settingsOpen = true
@@ -321,6 +427,10 @@ root.addEventListener('input', ev => {
       }
       break
     }
+    case 'scan-text':
+      e.scanText = el.value
+      e.scanFile = ''
+      break
     case 'repo':
       p = { ...p, repo: el.value }
       persist()
@@ -350,6 +460,25 @@ root.addEventListener('keydown', ev => {
     e.acIndex = 0
     render()
   }
+})
+
+root.addEventListener('change', ev => {
+  const el = ev.target as HTMLInputElement
+  if (el.dataset.in === 'scan-file' && el.files?.[0]) void readScanFile(el.files[0])
+  if (el.dataset.in === 'scan-osv') {
+    e.scanOsv = el.checked
+    render()
+  }
+})
+
+root.addEventListener('dragover', ev => {
+  if ((ev.target as HTMLElement).closest('[data-drop]')) ev.preventDefault()
+})
+root.addEventListener('drop', ev => {
+  if (!(ev.target as HTMLElement).closest('[data-drop]')) return
+  ev.preventDefault()
+  const f = ev.dataTransfer?.files[0]
+  if (f) void readScanFile(f)
 })
 
 document.addEventListener('keydown', ev => {
@@ -390,17 +519,30 @@ async function fetchDataset<T>(name: string): Promise<Dataset<T> | null> {
   }
 }
 
-async function boot(): Promise<void> {
-  render()
+let lastFetch = 0
+async function refresh(): Promise<void> {
+  e.offline = false
   const [threats, reports] = await Promise.all([
     fetchDataset<Threat>('threats'),
     fetchDataset<FieldReport>('reports'),
   ])
-  data.threats = threats ?? { sample: false, collectedAt: null, items: [] }
-  data.reports = reports ?? { sample: false, collectedAt: null, items: [] }
+  // Offline: keep what is already on screen rather than replacing it with nothing.
+  data.threats = threats ?? data.threats ?? { sample: false, collectedAt: null, items: [] }
+  data.reports = reports ?? data.reports ?? { sample: false, collectedAt: null, items: [] }
+  lastFetch = Date.now()
+  render()
+  notifyNew()
+}
+
+async function boot(): Promise<void> {
+  render()
+  await refresh()
   applyHash()
-  if (e.view === 'inbox' && inboxOf(ctx().rows).length === 0 && !e.sel) e.view = 'inbox'
   render()
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - lastFetch > 10 * 60_000) void refresh()
+})
 
 void boot()

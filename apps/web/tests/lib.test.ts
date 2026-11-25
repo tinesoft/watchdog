@@ -128,3 +128,137 @@ describe('sanitize', () => {
   })
   it('survives garbage', () => expect(sanitize(null).stack).toEqual([]))
 })
+
+import { compareVersions, isAffected } from '../src/lib/version'
+import { detectFormat, matchDeps, parseDeps, pendingAlerts } from '../src/lib/scan'
+import seed from '../public/data/threats.json'
+
+describe('versions', () => {
+  it('compares numerically with pre-releases below releases', () => {
+    expect(compareVersions('1.10.0', '1.9.0')).toBe(1)
+    expect(compareVersions('2.0-beta9', '2.0')).toBe(-1)
+    expect(compareVersions('v1.2', '1.2.0')).toBe(0)
+  })
+  it('evaluates the affected grammar used by the seed data', () => {
+    expect(isAffected('0.13.0', '< 0.14.1')).toBe(true)
+    expect(isAffected('0.14.1', '< 0.14.1')).toBe(false)
+    expect(isAffected('14.1.0', '11.1.4 – 15.2.2')).toBe(true)
+    expect(isAffected('15.2.3', '11.1.4 – 15.2.2')).toBe(false)
+    expect(isAffected('1.22.3', '< 1.21.11, 1.22.0 – 1.22.3')).toBe(true)
+    expect(isAffected('8.2.19', '8.1 < 8.1.29 · 8.2 < 8.2.20 · 8.3 < 8.3.8')).toBe(true)
+    expect(isAffected('8.2.20', '8.1 < 8.1.29 · 8.2 < 8.2.20 · 8.3 < 8.3.8')).toBe(false)
+    expect(isAffected('5.6.0', '5.6.0, 5.6.1')).toBe(true)
+    expect(isAffected('1.0.0', 'Cloud service')).toBe(false)
+    expect(isAffected('1.0.0', null)).toBe(false)
+  })
+})
+
+describe('dependency files', () => {
+  it('parses package.json and ignores non-version ranges', () => {
+    const deps = parseDeps(
+      '{"dependencies":{"next":"^14.1.0","x":"workspace:*"},"devDependencies":{"a":"~1.2.3"}}',
+      'package.json',
+    )
+    expect(deps).toEqual([
+      { name: 'next', version: '14.1.0', eco: 'npm' },
+      { name: 'a', version: '1.2.3', eco: 'npm' },
+    ])
+  })
+  it('parses package-lock.json v3 including scoped and nested packages', () => {
+    const lock = JSON.stringify({
+      lockfileVersion: 3,
+      packages: {
+        '': {},
+        'node_modules/@s/p': { version: '1.0.0' },
+        'node_modules/a/node_modules/b': { version: '2.0.0' },
+      },
+    })
+    expect(parseDeps(lock).map(d => d.name)).toEqual(['@s/p', 'b'])
+  })
+  it('parses requirements.txt, go.mod, Cargo.lock, Gemfile.lock, composer.lock and pom.xml', () => {
+    expect(
+      parseDeps(
+        'Django==5.0.2\nrequests[socks]==2.31.0 ; python_version>"3"\n# c\n',
+        'requirements.txt',
+      ),
+    ).toHaveLength(2)
+    const go = parseDeps(
+      'module x\n\ngo 1.22\n\nrequire (\n\tgithub.com/gin-gonic/gin v1.9.1\n)\n',
+      'go.mod',
+    )
+    expect(go).toContainEqual({ name: 'stdlib', version: '1.22.0', eco: 'Go' })
+    expect(go).toContainEqual({ name: 'github.com/gin-gonic/gin', version: '1.9.1', eco: 'Go' })
+    expect(parseDeps('[[package]]\nname = "tokio"\nversion = "1.37.0"\n', 'Cargo.lock')).toEqual([
+      { name: 'tokio', version: '1.37.0', eco: 'crates.io' },
+    ])
+    expect(
+      parseDeps('GEM\n  specs:\n    rails (7.1.3)\n      actionpack (= 7.1.3)\n', 'Gemfile.lock'),
+    ).toEqual([{ name: 'rails', version: '7.1.3', eco: 'RubyGems' }])
+    expect(
+      parseDeps(
+        '{"packages":[{"name":"laravel/framework","version":"v10.1.0"}],"packages-dev":[]}',
+        'composer.lock',
+      )[0],
+    ).toMatchObject({ version: '10.1.0' })
+    const pom =
+      '<project><properties><log4j.v>2.14.1</log4j.v></properties><dependencies><dependency><groupId>org.apache.logging.log4j</groupId><artifactId>log4j-core</artifactId><version>${log4j.v}</version></dependency></dependencies></project>'
+    expect(parseDeps(pom, 'pom.xml')).toEqual([
+      { name: 'org.apache.logging.log4j:log4j-core', version: '2.14.1', eco: 'Maven' },
+    ])
+  })
+  it('sniffs the format from content and rejects garbage', () => {
+    expect(detectFormat('{"lockfileVersion":3}')).toBe('package-lock.json')
+    expect(detectFormat('hello')).toBeNull()
+    expect(parseDeps('{ not json', 'package.json')).toEqual([])
+  })
+})
+
+describe('scan matching', () => {
+  const threats = seed.items as never[]
+  it('reproduces the design example: three vulnerable dependencies, worst first', () => {
+    const deps = parseDeps(
+      '{"dependencies":{"next":"14.1.0","follow-redirects":"1.15.5","@modelcontextprotocol/inspector":"0.13.0","left-pad":"1.3.0"}}',
+      'package.json',
+    )
+    const found = matchDeps(deps, threats)
+    expect(found.map(f => f.dep.name)).toEqual([
+      '@modelcontextprotocol/inspector',
+      'next',
+      'follow-redirects',
+    ])
+    expect(found[0]!.cmd).toBe('npm install @modelcontextprotocol/inspector@0.14.1')
+    expect(found[1]!.cmd).toBe('npm install next@15.2.3')
+  })
+  it('does not flag a fixed version', () =>
+    expect(
+      matchDeps(parseDeps('{"dependencies":{"next":"15.2.3"}}', 'package.json'), threats),
+    ).toEqual([]))
+})
+
+describe('alerts', () => {
+  it('never notifies twice for the same threat', () =>
+    expect(pendingAlerts([{ id: 'a' }, { id: 'b' }], ['a'])).toEqual([{ id: 'b' }]))
+})
+
+import { queryOsv } from '../src/lib/osv'
+
+describe('queryOsv', () => {
+  it('sends only name, ecosystem and version, and maps results back to dependencies', async () => {
+    let sent = ''
+    const fake = (async (_u: string, init: RequestInit) => {
+      sent = String(init.body)
+      return new Response(JSON.stringify({ results: [{}, { vulns: [{ id: 'GHSA-1' }] }] }))
+    }) as unknown as typeof fetch
+    const deps = [
+      { name: 'a', version: '1.0.0', eco: 'npm' as const },
+      { name: 'b', version: '2.0.0', eco: 'PyPI' as const },
+    ]
+    const hits = await queryOsv(deps, fake)
+    expect(hits).toEqual([{ dep: deps[1], ids: ['GHSA-1'] }])
+    expect(Object.keys(JSON.parse(sent).queries[0]).sort()).toEqual(['package', 'version'])
+  })
+  it('throws on an HTTP error so the UI can fall back to the local result', async () => {
+    const fake = (async () => new Response('', { status: 503 })) as unknown as typeof fetch
+    await expect(queryOsv([{ name: 'a', version: '1', eco: 'npm' }], fake)).rejects.toThrow('503')
+  })
+})
