@@ -2,7 +2,7 @@ import pkg from '../../package.json'
 import { issueUrl, toCsv, toMarkdown } from '../lib/export'
 import { queryOsv } from '../lib/osv'
 import { matchDeps, parseDeps, pendingAlerts } from '../lib/scan'
-import type { Dataset, FieldReport, Threat, TriageStatus } from '../lib/types'
+import type { Dataset, FieldReport, SweepStatus, Threat, TriageStatus } from '../lib/types'
 import { acMatches, inboxOf as inbox, isListView, shell, type Ctx } from './templates'
 import {
   defaults,
@@ -45,7 +45,7 @@ const e: Ephemeral = {
   scanBusy: false,
   scan: null,
 }
-const data: Data = { threats: null, reports: null }
+const data: Data = { threats: null, reports: null, status: null }
 
 const systemTheme = (): Theme =>
   matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
@@ -529,6 +529,8 @@ async function refresh(): Promise<void> {
   // Offline: keep what is already on screen rather than replacing it with nothing.
   data.threats = threats ?? data.threats ?? { sample: false, collectedAt: null, items: [] }
   data.reports = reports ?? data.reports ?? { sample: false, collectedAt: null, items: [] }
+  data.status =
+    ((await fetchDataset<never>('status')) as unknown as SweepStatus | null) ?? data.status
   lastFetch = Date.now()
   render()
   notifyNew()

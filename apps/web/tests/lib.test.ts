@@ -131,7 +131,7 @@ describe('sanitize', () => {
 
 import { compareVersions, isAffected } from '../src/lib/version'
 import { detectFormat, matchDeps, parseDeps, pendingAlerts } from '../src/lib/scan'
-import seed from '../public/data/threats.json'
+import seed from '../data/seed/threats.json'
 
 describe('versions', () => {
   it('compares numerically with pre-releases below releases', () => {
@@ -261,4 +261,148 @@ describe('queryOsv', () => {
     const fake = (async () => new Response('', { status: 503 })) as unknown as typeof fetch
     await expect(queryOsv([{ name: 'a', version: '1', eco: 'npm' }], fake)).rejects.toThrow('503')
   })
+})
+
+import { mergeThreat } from '../scripts/collect/merge.ts'
+import { rangeOf } from '../scripts/collect/ghsa.ts'
+import { parseFeed, cvesIn } from '../scripts/collect/feed.ts'
+import { buildFeed } from '../scripts/collect/rss.ts'
+import { threatTypeOf, categoryOf, severityOf } from '../scripts/collect/enrich.ts'
+
+describe('collector: merge', () => {
+  const kev = {
+    id: 'CVE-1',
+    name: 'Foo RCE',
+    vendor: 'Foo',
+    product: 'Bar',
+    summary: 's',
+    action: 'Patch',
+    dateAdded: '2026-11-01',
+  }
+  it('combines sources: GHSA package data, NVD score, KEV exploited flag', () => {
+    const t = mergeThreat(
+      'CVE-1',
+      [
+        { id: 'CVE-1', source: 'nvd', cvss: 9.8, published: '2026-10-30', summary: 'nvd text' },
+        {
+          id: 'CVE-1',
+          source: 'ghsa',
+          title: 'Remote code execution in bar',
+          eco: 'npm',
+          pkg: 'bar',
+          affected: '< 2.0.0',
+          fixed: '2.0.0',
+          published: '2026-11-02',
+        },
+      ],
+      kev,
+      undefined,
+    )!
+    expect(t).toMatchObject({
+      id: 'CVE-1',
+      cvss: 9.8,
+      severity: 'critical',
+      exploited: true,
+      eco: 'npm',
+      pkg: 'bar',
+      affected: '< 2.0.0',
+      published: '2026-10-30',
+      threat: 'virus',
+      category: 'packages',
+      kevAction: 'Patch',
+    })
+    expect(t.sources).toEqual(['ghsa', 'nvd', 'cisa-kev'])
+  })
+  it('waits for a score rather than publishing a threat it cannot rank', () =>
+    expect(
+      mergeThreat('CVE-2', [{ id: 'CVE-2', source: 'cisa-kev' }], undefined, undefined),
+    ).toBeNull())
+  it('lets a curated override win for text and type but not for the score', () => {
+    const t = mergeThreat(
+      'CVE-3',
+      [{ id: 'CVE-3', source: 'nvd', cvss: 7.5, title: 'auto' }],
+      undefined,
+      { title: 'Curated', threat: 'trojan' },
+    )!
+    expect(t.title).toBe('Curated')
+    expect(t.threat).toBe('trojan')
+    expect(t.cvss).toBe(7.5)
+  })
+})
+
+describe('collector: GHSA ranges', () => {
+  it('maps GitHub ranges to the shared grammar', () => {
+    expect(rangeOf('< 1.2.3')).toBe('< 1.2.3')
+    expect(rangeOf('>= 1.0.0, < 1.2.3')).toBe('1.0.0 < 1.2.3')
+    expect(rangeOf('>= 1.0.0, <= 1.2.3')).toBe('1.0.0 – 1.2.3')
+    expect(rangeOf('<= 2.0')).toBe('≤ 2.0')
+    expect(rangeOf('= 1.5.0')).toBe('1.5.0')
+    expect(rangeOf('>= 3.0')).toBe('≥ 3.0')
+    expect(rangeOf(null)).toBe('')
+  })
+  it('round-trips through the matcher', () => {
+    expect(isAffected('1.1.0', rangeOf('>= 1.0.0, < 1.2.3'))).toBe(true)
+    expect(isAffected('1.2.3', rangeOf('>= 1.0.0, < 1.2.3'))).toBe(false)
+    expect(isAffected('9.0.0', rangeOf('>= 3.0'))).toBe(true)
+  })
+})
+
+describe('collector: feeds', () => {
+  it('reads RSS and Atom, strips markup, and drops nothing silently', () => {
+    const rss =
+      '<rss version="2.0"><channel><item><title>A &amp; B</title><link>https://x/1</link><pubDate>Tue, 24 Nov 2026 14:15:18 +0000</pubDate><description><![CDATA[<p>See CVE-2026-1234 and cve-2026-1234.</p>]]></description></item></channel></rss>'
+    const atom =
+      '<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>T</title><link href="https://x/2" rel="alternate"/><updated>2026-11-01T00:00:00Z</updated><summary>s</summary></entry></feed>'
+    expect(parseFeed(rss)).toEqual([
+      {
+        title: 'A & B',
+        link: 'https://x/1',
+        date: '2026-11-24',
+        text: 'See CVE-2026-1234 and cve-2026-1234.',
+      },
+    ])
+    expect(parseFeed(atom)[0]).toMatchObject({ link: 'https://x/2', date: '2026-11-01' })
+    expect(cvesIn('See CVE-2026-1234 and cve-2026-1234.')).toEqual(['CVE-2026-1234'])
+    expect(parseFeed('<html>nope</html>')).toEqual([])
+  })
+  it('escapes everything in the published RSS', () => {
+    const t = {
+      ...(seed.items[0] as never as Record<string, unknown>),
+      title: '<script>"x"</script>',
+      exploited: true,
+      severity: 'critical',
+      published: '2026-11-01',
+    } as never
+    const xml = buildFeed([t], 'https://s', new Date('2026-11-02T00:00:00Z'))
+    expect(xml).not.toContain('<script>')
+    expect(xml).toContain('&lt;script&gt;')
+    expect(xml).toContain('[EXPLOITED]')
+  })
+})
+
+describe('collector: enrichment', () => {
+  it('classifies by keywords, then CWE', () => {
+    expect(threatTypeOf('Remote code execution in x', [])).toBe('virus')
+    expect(threatTypeOf('Denial of service', [])).toBe('worm')
+    expect(threatTypeOf('Authentication bypass', [])).toBe('hacker')
+    expect(threatTypeOf('Backdoor in release', [])).toBe('trojan')
+    expect(threatTypeOf('something odd', ['CWE-79'])).toBe('hacker')
+    expect(threatTypeOf('something odd', [])).toBe('bug')
+  })
+  it('classifies the category and severity bands', () => {
+    expect(categoryOf('MCP server flaw', 'npm', 'x')).toBe('ai')
+    expect(categoryOf('x', undefined, 'stdlib')).toBe('languages')
+    expect(categoryOf('Windows kernel flaw', undefined, 'Windows')).toBe('os')
+    expect(categoryOf('Foo appliance', undefined, 'Foo')).toBe('tools')
+    expect(categoryOf('x', 'PyPI', 'django')).toBe('packages')
+    expect([severityOf(9), severityOf(7), severityOf(5)]).toEqual(['critical', 'high', 'medium'])
+  })
+})
+
+import { plainText } from '../scripts/collect/feed.ts'
+describe('collector: markdown', () => {
+  it('keeps the words and drops the syntax', () =>
+    expect(plainText('### Impact\nIn `foo` before [v2](https://x), **bad**.\n```\ncode\n```')).toBe(
+      'Impact In foo before v2, bad.',
+    ))
 })

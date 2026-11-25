@@ -300,6 +300,17 @@ function emptyState(c: Ctx): string {
 
 // ---- detail panel -------------------------------------------------------
 
+function advisoriesBox(v: Row): string {
+  if (!v.advisories?.length) return ''
+  return `<div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 8px"><span class="mono" style="font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">Advisories</span>${v.advisories
+    .slice(0, 6)
+    .map(
+      a =>
+        `<a href="${esc(safeUrl(a.url))}" target="_blank" rel="noopener" style="font-size: 13px; line-height: 1.4"><span class="mono" style="color: var(--dim)">${esc(a.source)}</span> ${esc(a.title)} ↗</a>`,
+    )
+    .join('')}</div>`
+}
+
 export function detail(c: Ctx): string {
   const v = c.rows.find(r => r.id === c.e.sel)
   if (!v) return ''
@@ -321,7 +332,7 @@ ${v.exploited ? `<div style="border: 1px solid var(--crit); background: var(--cr
 <p style="margin: 0; color: var(--text2); line-height: 1.6">${esc(v.summary)}</p>
 <div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 10px"><span class="mono" style="font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">How to fix</span>
 <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 13px"><dt style="color: var(--dim)">Package</dt><dd class="mono" style="margin: 0">${esc(product)}</dd><dt style="color: var(--dim)">Affected</dt><dd class="mono" style="margin: 0; color: var(--high-t)">${esc(v.affected ?? 'See advisory')}</dd><dt style="color: var(--dim)">Fixed in</dt><dd class="mono" style="margin: 0; color: var(--lime)">${esc(v.fixed ?? 'See advisory')}</dd></dl>${cmd ? cmdBox(cmd) : ''}</div>
-<div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 10px"><span class="mono" style="font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">Your triage</span><div style="display: flex; flex-wrap: wrap; gap: 6px">${picks}</div>
+${advisoriesBox(v)}<div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 10px"><span class="mono" style="font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">Your triage</span><div style="display: flex; flex-wrap: wrap; gap: 6px">${picks}</div>
 <label for="wd-note" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Notes</label><textarea id="wd-note" data-in="note" rows="2" placeholder="Notes: where it runs, owner, ticket…" style="width: 100%; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text); padding: 10px 12px; font: 400 13px 'JetBrains Mono', monospace; resize: vertical">${esc(c.p.notes[v.id] ?? '')}</textarea></div>
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><button type="button" class="btn btn-p" data-act="issue">Open GitHub issue</button><button type="button" class="btn btn-g" data-act="copy-md">Copy as Markdown</button><button type="button" class="btn btn-g" data-act="copy-link">Copy link</button><button type="button" class="btn btn-g" data-act="add-stack">Add to my stack</button></div></aside>`
 }
@@ -388,15 +399,25 @@ ${
 export const sourceGroups = sources as SourceGroup[]
 export const sourceTotal = () => sourceGroups.reduce((n, g) => n + g.items.length, 0)
 
-export function sourcesView(): string {
-  return `<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px"><div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Sources</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">${sourceTotal()} trusted sources the dog patrols twice a day, at 07:00 and 14:00 UTC, in ${sourceGroups.length} groups.</p></div></div>
+export function sourcesView(c: Ctx): string {
+  const st = new Map((c.data.status?.sources ?? []).map(x => [x.id, x]))
+  const badge = (id: string, mode: string): string => {
+    const r = st.get(id)
+    if (mode === 'link-only')
+      return '<span class="mono" style="font-size: 11px; color: var(--dim)">link only</span>'
+    if (!r) return '<span class="mono" style="font-size: 11px; color: var(--dim)">collected</span>'
+    return r.ok
+      ? `<span class="mono" style="font-size: 11px; color: var(--lime)">✓ ${r.count}</span>`
+      : `<span class="mono" style="font-size: 11px; color: var(--crit-t)" title="${esc(r.error ?? '')}">✗ failed, kept last result</span>`
+  }
+  return `<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px"><div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Sources</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">${sourceTotal()} trusted sources the dog patrols twice a day, at 07:00 and 14:00 UTC, in ${sourceGroups.length} groups.${c.data.status ? ` Last sweep ${esc(c.data.status.collectedAt.slice(0, 16).replace('T', ' '))} UTC.` : ''}</p></div></div>
 <div style="display: flex; flex-direction: column; gap: 16px">${sourceGroups
     .map(
       g => `<section class="srcgroup" aria-label="${esc(g.name)}"><div style="display: flex; align-items: center; gap: 12px"><span class="srcgroup-ic" style="color: ${g.color}">${icons[g.icon]}</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="display: flex; align-items: baseline; gap: 8px"><h2 style="margin: 0; font-size: 17px">${esc(g.name)}</h2><span class="mono" style="font-size: 12px; color: var(--dim)">${g.items.length}</span></span><span style="font-size: 12.5px; line-height: 1.45; color: var(--muted)">${esc(g.desc)}</span></span></div>
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 2px">${g.items
         .map(
           it =>
-            `<a class="srcitem" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600; color: var(--text)">${esc(it.name)}</span><span class="mono" style="font-size: 12px; color: var(--lime); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">${esc(it.url)}</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; color: var(--dim)"><path d="M7 17L17 7M8 7h9v9"></path></svg></a>`,
+            `<a class="srcitem" href="${esc(safeUrl(it.url))}" target="_blank" rel="noopener"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600; color: var(--text)">${esc(it.name)}</span><span class="mono" style="font-size: 12px; color: var(--lime); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">${esc(it.url)}</span></span>${badge(it.id, it.mode)}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; color: var(--dim)"><path d="M7 17L17 7M8 7h9v9"></path></svg></a>`,
         )
         .join('')}</div></section>`,
     )
@@ -539,7 +560,7 @@ export function main(c: Ctx): string {
     case 'reports':
       return reportsView(c)
     case 'sources':
-      return sourcesView()
+      return sourcesView(c)
     default:
       return listView(c)
   }

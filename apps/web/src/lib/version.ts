@@ -28,7 +28,7 @@ function parsePart(s: string | undefined): { num: number; tag: string } {
 /**
  * Whether `version` falls in an `affected` string. The grammar, shared with the collectors:
  * clauses separated by "," or "·"; each clause is "< X", "<= X" or "≤ X", "A – B" (inclusive),
- * "A < B" (from A up to, excluding, B), or an exact version "X".
+ * "A < B" (from A up to, excluding, B), ">= X", "> X", or an exact version "X".
  */
 export function isAffected(version: string, affected: string | null): boolean {
   if (!affected) return false
@@ -39,6 +39,10 @@ export function isAffected(version: string, affected: string | null): boolean {
   return clauses.some(c => {
     let m = /^(?:<=|≤)\s*(\S+)$/.exec(c)
     if (m) return compareVersions(version, m[1]!) <= 0
+    m = /^(?:>=|≥)\s*(\S+)$/.exec(c)
+    if (m) return compareVersions(version, m[1]!) >= 0
+    m = /^>\s*(\S+)$/.exec(c)
+    if (m) return compareVersions(version, m[1]!) > 0
     m = /^<\s*(\S+)$/.exec(c)
     if (m) return compareVersions(version, m[1]!) < 0
     m = /^(\S+)\s*[–-]\s*(\S+)$/.exec(c)

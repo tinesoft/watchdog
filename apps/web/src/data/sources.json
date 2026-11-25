@@ -8,32 +8,44 @@
       {
         "name": "CISA Known Exploited Vulnerabilities",
         "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
-        "host": "cisa.gov"
+        "host": "cisa.gov",
+        "id": "cisa-kev",
+        "mode": "collected"
       },
       {
         "name": "CERT-EU security advisories",
         "url": "https://cert.europa.eu/publications/security-advisories/",
-        "host": "cert.europa.eu"
+        "host": "cert.europa.eu",
+        "id": "cert-eu",
+        "mode": "link-only"
       },
       {
         "name": "CSSF ICT communiqués (Luxembourg)",
         "url": "https://www.cssf.lu/en/",
-        "host": "cssf.lu"
+        "host": "cssf.lu",
+        "id": "cssf",
+        "mode": "link-only"
       },
       {
         "name": "CIRCL vulnerability lookup (Luxembourg)",
         "url": "https://vulnerability.circl.lu/",
-        "host": "vulnerability.circl.lu"
+        "host": "vulnerability.circl.lu",
+        "id": "circl",
+        "mode": "link-only"
       },
       {
         "name": "NIST National Vulnerability Database",
         "url": "https://nvd.nist.gov/",
-        "host": "nvd.nist.gov"
+        "host": "nvd.nist.gov",
+        "id": "nvd",
+        "mode": "collected"
       },
       {
         "name": "CERT-FR (ANSSI) avis",
         "url": "https://www.cert.ssi.gouv.fr/",
-        "host": "cert.ssi.gouv.fr"
+        "host": "cert.ssi.gouv.fr",
+        "id": "cert-fr",
+        "mode": "collected"
       }
     ]
   },
@@ -46,47 +58,65 @@
       {
         "name": "Oracle Critical Patch Updates",
         "url": "https://www.oracle.com/security-alerts/",
-        "host": "oracle.com"
+        "host": "oracle.com",
+        "id": "oracle-cpu",
+        "mode": "link-only"
       },
       {
         "name": "OpenJDK vulnerability advisories",
         "url": "https://openjdk.org/groups/vulnerability/advisories/",
-        "host": "openjdk.org"
+        "host": "openjdk.org",
+        "id": "openjdk",
+        "mode": "link-only"
       },
       {
         "name": "Jenkins security advisories",
         "url": "https://www.jenkins.io/security/advisories/",
-        "host": "jenkins.io"
+        "host": "jenkins.io",
+        "id": "jenkins",
+        "mode": "collected"
       },
       {
         "name": "Node.js security releases",
         "url": "https://nodejs.org/en/blog/vulnerability",
-        "host": "nodejs.org"
+        "host": "nodejs.org",
+        "id": "nodejs",
+        "mode": "collected"
       },
       {
         "name": "Sonar community security advisories",
         "url": "https://community.sonarsource.com/",
-        "host": "community.sonarsource.com"
+        "host": "community.sonarsource.com",
+        "id": "sonar",
+        "mode": "link-only"
       },
       {
         "name": "Microsoft Security Response Center",
         "url": "https://msrc.microsoft.com/update-guide",
-        "host": "msrc.microsoft.com"
+        "host": "msrc.microsoft.com",
+        "id": "msrc",
+        "mode": "collected"
       },
       {
         "name": "Spring security advisories",
         "url": "https://spring.io/security",
-        "host": "spring.io"
+        "host": "spring.io",
+        "id": "spring",
+        "mode": "collected"
       },
       {
         "name": "NGINX security advisories",
         "url": "https://nginx.org/en/security_advisories.html",
-        "host": "nginx.org"
+        "host": "nginx.org",
+        "id": "nginx",
+        "mode": "link-only"
       },
       {
         "name": "Palo Alto Networks advisories",
         "url": "https://security.paloaltonetworks.com/",
-        "host": "security.paloaltonetworks.com"
+        "host": "security.paloaltonetworks.com",
+        "id": "paloalto",
+        "mode": "link-only"
       }
     ]
   },
@@ -99,27 +129,37 @@
       {
         "name": "GitHub Advisory Database",
         "url": "https://github.com/advisories",
-        "host": "github.com"
+        "host": "github.com",
+        "id": "ghsa",
+        "mode": "collected"
       },
       {
         "name": "OSV.dev",
         "url": "https://osv.dev/",
-        "host": "osv.dev"
+        "host": "osv.dev",
+        "id": "osv",
+        "mode": "link-only"
       },
       {
         "name": "Snyk Vulnerability DB",
         "url": "https://security.snyk.io/",
-        "host": "security.snyk.io"
+        "host": "security.snyk.io",
+        "id": "snyk",
+        "mode": "link-only"
       },
       {
         "name": "Docker Scout",
         "url": "https://scout.docker.com/",
-        "host": "scout.docker.com"
+        "host": "scout.docker.com",
+        "id": "docker-scout",
+        "mode": "link-only"
       },
       {
         "name": "GitLab Advisory Database",
         "url": "https://advisories.gitlab.com/",
-        "host": "advisories.gitlab.com"
+        "host": "advisories.gitlab.com",
+        "id": "gitlab-advisories",
+        "mode": "link-only"
       }
     ]
   },
@@ -132,32 +172,44 @@
       {
         "name": "Sophos threat research",
         "url": "https://www.sophos.com/en-us/news/category/threat-research",
-        "host": "sophos.com"
+        "host": "sophos.com",
+        "id": "sophos",
+        "mode": "collected"
       },
       {
         "name": "Kaspersky Securelist",
         "url": "https://securelist.com/",
-        "host": "securelist.com"
+        "host": "securelist.com",
+        "id": "kaspersky",
+        "mode": "collected"
       },
       {
         "name": "ESET WeLiveSecurity",
         "url": "https://www.welivesecurity.com/",
-        "host": "welivesecurity.com"
+        "host": "welivesecurity.com",
+        "id": "eset",
+        "mode": "collected"
       },
       {
         "name": "Sonatype research",
         "url": "https://www.sonatype.com/blog",
-        "host": "sonatype.com"
+        "host": "sonatype.com",
+        "id": "sonatype",
+        "mode": "collected"
       },
       {
         "name": "Microsoft Security Blog",
         "url": "https://www.microsoft.com/en-us/security/blog/",
-        "host": "microsoft.com"
+        "host": "microsoft.com",
+        "id": "microsoft",
+        "mode": "collected"
       },
       {
         "name": "Google Project Zero",
         "url": "https://googleprojectzero.blogspot.com/",
-        "host": "googleprojectzero.blogspot.com"
+        "host": "googleprojectzero.blogspot.com",
+        "id": "pz",
+        "mode": "collected"
       }
     ]
   },
@@ -170,17 +222,23 @@
       {
         "name": "BleepingComputer",
         "url": "https://www.bleepingcomputer.com/",
-        "host": "bleepingcomputer.com"
+        "host": "bleepingcomputer.com",
+        "id": "bleepingcomputer",
+        "mode": "collected"
       },
       {
         "name": "The Hacker News",
         "url": "https://thehackernews.com/",
-        "host": "thehackernews.com"
+        "host": "thehackernews.com",
+        "id": "thehackernews",
+        "mode": "collected"
       },
       {
         "name": "SecurityWeek",
         "url": "https://www.securityweek.com/",
-        "host": "securityweek.com"
+        "host": "securityweek.com",
+        "id": "securityweek",
+        "mode": "collected"
       }
     ]
   }

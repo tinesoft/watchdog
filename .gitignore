@@ -8,3 +8,7 @@ dist/
 test-results/
 playwright-report/
 .pnpm-store/
+
+# Written by a Sweep or the seed script
+apps/web/public/data/
+apps/web/public/feed.xml

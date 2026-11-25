@@ -8,13 +8,16 @@
       "command": "astro dev --host",
       "options": {
         "cwd": "apps/web"
-      }
+      },
+      "dependsOn": ["seed"]
     },
     "build": {
       "command": "astro build",
       "options": {
         "cwd": "apps/web"
-      }
+      },
+      "dependsOn": ["seed"],
+      "inputs": ["default", "toolchain", "{projectRoot}/public/data/*.json"]
     },
     "preview": {
       "command": "astro preview --host",
@@ -41,7 +44,22 @@
       "command": "playwright test",
       "options": {
         "cwd": "apps/web"
-      }
+      },
+      "dependsOn": ["seed"]
+    },
+    "seed": {
+      "command": "node scripts/seed.ts",
+      "options": {
+        "cwd": "apps/web"
+      },
+      "cache": false
+    },
+    "collect": {
+      "command": "node scripts/collect/index.ts",
+      "options": {
+        "cwd": "apps/web"
+      },
+      "cache": false
     }
   }
 }

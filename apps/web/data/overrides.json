@@ -1,0 +1,145 @@
+{
+  "CVE-2025-49596": {
+    "title": "MCP Inspector lets a web page run code on your machine",
+    "summary": "The inspector proxy accepted unauthenticated requests, so a malicious website could reach it from the browser and execute commands on a developer workstation.",
+    "category": "ai",
+    "threat": "virus",
+    "eco": "npm",
+    "pkg": "@modelcontextprotocol/inspector",
+    "affected": "< 0.14.1",
+    "fixed": "0.14.1",
+    "product": "npm · @modelcontextprotocol/inspector"
+  },
+  "CVE-2025-32711": {
+    "title": "EchoLeak: zero-click prompt injection in Microsoft 365 Copilot",
+    "summary": "Crafted content in an email could steer Copilot into leaking data from the user’s context to an attacker, without the victim clicking anything.",
+    "category": "ai",
+    "threat": "hacker",
+    "eco": "Microsoft",
+    "pkg": "Microsoft 365 Copilot",
+    "affected": "Cloud service",
+    "fixed": "Fixed server-side by Microsoft",
+    "product": "Microsoft 365 Copilot"
+  },
+  "CVE-2025-29927": {
+    "title": "Next.js middleware authorization bypass",
+    "summary": "Sending an internal x-middleware-subrequest header made Next.js skip middleware entirely, bypassing auth checks implemented there.",
+    "category": "packages",
+    "threat": "hacker",
+    "eco": "npm",
+    "pkg": "next",
+    "affected": "11.1.4 – 15.2.2",
+    "fixed": "12.3.5 · 13.5.9 · 14.2.25 · 15.2.3",
+    "product": "npm · next"
+  },
+  "CVE-2024-38063": {
+    "title": "Wormable Windows TCP/IP remote code execution over IPv6",
+    "summary": "Specially crafted IPv6 packets could trigger an integer underflow in the TCP/IP stack and give an unauthenticated attacker code execution.",
+    "category": "os",
+    "threat": "worm",
+    "eco": "Microsoft",
+    "pkg": "Windows TCP/IP",
+    "affected": "Windows 10, 11, Server 2008–2022 with IPv6",
+    "fixed": "August 2024 security update",
+    "product": "Windows · tcpip.sys"
+  },
+  "CVE-2024-6387": {
+    "title": "regreSSHion: unauthenticated RCE in OpenSSH server",
+    "summary": "A signal handler race condition, a regression of a 2006 bug, can let a remote attacker run code as root on glibc-based Linux systems.",
+    "category": "tools",
+    "threat": "hacker",
+    "eco": null,
+    "pkg": "OpenSSH",
+    "affected": "8.5p1 – 9.7p1 (glibc Linux)",
+    "fixed": "9.8p1",
+    "product": "OpenSSH · sshd"
+  },
+  "CVE-2024-24790": {
+    "title": "Go net/netip misclassifies IPv4-mapped IPv6 addresses",
+    "summary": "Methods like IsPrivate and IsLoopback returned wrong answers for IPv4-mapped IPv6 addresses, which can break allow-lists and SSRF protections.",
+    "category": "languages",
+    "threat": "bug",
+    "eco": "Go",
+    "pkg": "stdlib",
+    "affected": "< 1.21.11, 1.22.0 – 1.22.3",
+    "fixed": "1.21.11 · 1.22.4",
+    "product": "Go standard library"
+  },
+  "CVE-2024-4577": {
+    "title": "PHP-CGI argument injection on Windows",
+    "summary": "Windows “Best-Fit” character conversion lets attackers smuggle command-line options into php-cgi and execute arbitrary PHP code.",
+    "category": "languages",
+    "threat": "virus",
+    "eco": null,
+    "pkg": "PHP",
+    "affected": "8.1 < 8.1.29 · 8.2 < 8.2.20 · 8.3 < 8.3.8",
+    "fixed": "8.1.29 · 8.2.20 · 8.3.8",
+    "product": "PHP (CGI mode, Windows)"
+  },
+  "CVE-2024-3094": {
+    "title": "Backdoor hidden in xz / liblzma release tarballs",
+    "summary": "Malicious code planted by a long-term maintainer hooked into sshd through systemd on some Linux distributions, enabling remote access for the attacker.",
+    "category": "os",
+    "threat": "trojan",
+    "eco": null,
+    "pkg": "xz-utils",
+    "affected": "5.6.0, 5.6.1",
+    "fixed": "Revert to 5.4.6, or 5.6.2+",
+    "product": "xz-utils · liblzma"
+  },
+  "CVE-2024-28849": {
+    "title": "follow-redirects leaks Proxy-Authorization across domains",
+    "summary": "The Proxy-Authorization header was kept when following a redirect to another host, exposing proxy credentials.",
+    "category": "packages",
+    "threat": "bug",
+    "eco": "npm",
+    "pkg": "follow-redirects",
+    "affected": "< 1.15.6",
+    "fixed": "1.15.6",
+    "product": "npm · follow-redirects"
+  },
+  "CVE-2024-21626": {
+    "title": "Leaky Vessels: container escape in runc",
+    "summary": "A leaked file descriptor let a malicious image or build step reach the host filesystem and break out of the container.",
+    "category": "tools",
+    "threat": "bug",
+    "eco": null,
+    "pkg": "runc",
+    "affected": "≤ 1.1.11",
+    "fixed": "1.1.12",
+    "product": "runc (Docker, containerd, Kubernetes)"
+  },
+  "CVE-2023-44487": {
+    "title": "HTTP/2 Rapid Reset denial of service",
+    "summary": "Opening and instantly cancelling streams floods servers with work, enabling record-breaking DDoS attacks against HTTP/2 endpoints.",
+    "category": "tools",
+    "threat": "worm",
+    "eco": null,
+    "pkg": "HTTP/2 servers",
+    "affected": "Most HTTP/2 implementations",
+    "fixed": "Vendor-specific patches",
+    "product": "HTTP/2 servers · nginx, Go, Netty, Envoy…"
+  },
+  "CVE-2023-4863": {
+    "title": "libwebp heap overflow exploited through images",
+    "summary": "A malformed WebP image could overflow a heap buffer in the decoder, leading to code execution in anything that renders images.",
+    "category": "packages",
+    "threat": "virus",
+    "eco": null,
+    "pkg": "libwebp",
+    "affected": "< 1.3.2",
+    "fixed": "1.3.2",
+    "product": "libwebp (Chrome, Electron, Pillow…)"
+  },
+  "CVE-2021-44228": {
+    "title": "Log4Shell: JNDI lookup remote code execution",
+    "summary": "Logging an attacker-controlled string could make Log4j fetch and run remote code via JNDI, one of the most exploited bugs ever.",
+    "category": "packages",
+    "threat": "worm",
+    "eco": "Maven",
+    "pkg": "org.apache.logging.log4j:log4j-core",
+    "affected": "2.0-beta9 – 2.14.1",
+    "fixed": "2.17.1 (Java 8+)",
+    "product": "Maven · org.apache.logging.log4j:log4j-core"
+  }
+}

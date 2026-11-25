@@ -2,7 +2,15 @@ import { isMine } from '../lib/match'
 import { risk } from '../lib/risk'
 import type { Dep, Finding } from '../lib/scan'
 import type { OsvHit } from '../lib/osv'
-import type { Category, Dataset, FieldReport, Severity, Threat, TriageStatus } from '../lib/types'
+import type {
+  Category,
+  Dataset,
+  FieldReport,
+  Severity,
+  SweepStatus,
+  Threat,
+  TriageStatus,
+} from '../lib/types'
 
 export type View =
   'inbox' | 'all' | 'stack-feed' | 'triage' | 'scan' | 'stack' | 'reports' | 'sources'
@@ -127,6 +135,7 @@ export interface Row extends Threat {
 export interface Data {
   threats: Dataset<Threat> | null
   reports: Dataset<FieldReport> | null
+  status: SweepStatus | null
 }
 
 export function rowsOf(threats: Threat[], p: Persisted): Row[] {
