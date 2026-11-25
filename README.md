@@ -159,46 +159,21 @@ Link-only sources have no usable public feed, or block automated clients. They s
 
 ## 🛠️ Development
 
-An [Nx](https://nx.dev) workspace with pnpm, one Astro app (`apps/web`) written in vanilla TypeScript. Open the repository in the dev container, or use Node 24.
+An [Nx](https://nx.dev) workspace with pnpm and one Astro app written in vanilla TypeScript. Open the repository in the dev container, or use Node 24.
 
 ```sh
 pnpm install
-pnpm dev                       # http://localhost:4321/watchdog/, on seed data
-pnpm check                     # lint, typecheck, test, build
-pnpm nx e2e web                # browser tests (needs: pnpm --filter web exec playwright install chromium)
-pnpm nx collect web            # run a real sweep into apps/web/public
+pnpm dev     # http://localhost:4321/watchdog/, on seed data
+pnpm check   # lint, typecheck, test, build
 ```
 
-| Where                          | What                                                                   |
-| ------------------------------ | ---------------------------------------------------------------------- |
-| `apps/web/src/scripts`         | State, rendering and events                                            |
-| `apps/web/src/lib`             | Pure logic: ranking, matching, versions, scan parsers, fix commands    |
-| `apps/web/scripts/collect`     | The sweep: one module per source, the merge and the size gate          |
-| `apps/web/data`                | Seed fixtures and the curated overrides                                |
-| `apps/web/scripts/build-sw.ts` | Writes the service worker with this build's file list                  |
-| `docs/design/plan.md`          | The original plan and what changed since                               |
-| `docs/adr`                     | Decisions that were hard to reverse                                    |
-| `GLOSSARY.md`                  | The words this project uses: Threat, Stack, Triage, Sweep and the rest |
-
-### How it ships
-
-| Workflow      | When                                              | What                                                                                                                     |
-| ------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `ci.yml`      | pull requests, pushes to `develop`                | linear-history check, lint, typecheck, unit and browser tests, build, PR title lint                                      |
-| `deploy.yml`  | push to `main`, 07:00 and 14:00 UTC daily, manual | runs the sweep, builds, deploys to GitHub Pages                                                                          |
-| `release.yml` | push to `main`, manual                            | `nx release`: version from conventional commits, `CHANGELOG.md`, `vX.Y.Z` tag, GitHub Release, back-merge into `develop` |
-
-`develop` is the default branch and where work lands. `main` holds released code and is the branch that deploys. History is linear.
-
-One-time setup on GitHub: Settings → Pages → Source: **GitHub Actions**. Optionally add an `NVD_API_KEY` repository secret to speed the sweep up. The first release is run by hand: Actions → Release → Run workflow, with the first version (for example `1.0.0`) as the specifier. After that every push to `main` releases whatever its commits call for.
+The layout, the Sweep, the workflows and how releases work are in [`CONTRIBUTING.md`](CONTRIBUTING.md). The original plan is in [`docs/design/plan.md`](docs/design/plan.md).
 
 ---
 
 ## 🤝 Contributing
 
-Branch from `develop` and open pull requests against it. Commits and PR titles follow [Conventional Commits](https://www.conventionalcommits.org/), checked by commitlint. Scopes are `web`, `repo`, `ci`, `deps`, `release` and `docs`. Husky runs lint-staged on commit and refuses merge commits.
-
-Use the words in [`GLOSSARY.md`](GLOSSARY.md): a **Threat** is one vulnerability merged from every source, an **Advisory** is one source's record of it, and a **Sweep** is one scheduled collection run.
+Contributions are welcome. Read [`CONTRIBUTING.md`](CONTRIBUTING.md) first: branches, Conventional Commits, the checks to run and how to add a source. Use the words in [`GLOSSARY.md`](GLOSSARY.md).
 
 ---
 
