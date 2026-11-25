@@ -1,10 +1,11 @@
 import pkg from '../../package.json'
 import { issueUrl, toCsv, toMarkdown } from '../lib/export'
+import { ALARM_COLOR, faviconDataUri } from '../lib/favicon'
 import { queryOsv } from '../lib/osv'
 import { registerServiceWorker } from './pwa'
 import { matchDeps, parseDeps, pendingAlerts } from '../lib/scan'
 import type { Dataset, FieldReport, SweepStatus, Threat, TriageStatus } from '../lib/types'
-import { acMatches, inboxOf as inbox, isListView, shell, type Ctx } from './templates'
+import { acMatches, inboxOf as inbox, isListView, shell, stackHot, type Ctx } from './templates'
 import {
   defaults,
   filtered,
@@ -64,12 +65,24 @@ function ctx(): Ctx {
   }
 }
 
+const faviconEl = document.getElementById('wd-favicon') as HTMLLinkElement | null
+const calmFavicon = faviconEl?.getAttribute('href') ?? ''
+
+/** The tab icon takes the dog's alarm colour while a new exploited threat matches the stack. */
+function setFavicon(alarm: boolean, theme: Theme): void {
+  if (!faviconEl) return
+  const href = alarm ? faviconDataUri(ALARM_COLOR[theme]) : calmFavicon
+  if (faviconEl.getAttribute('href') !== href) faviconEl.setAttribute('href', href)
+}
+
 function render(): void {
   const active = document.activeElement as HTMLInputElement | null
   const id = active?.id
   const caret =
     id && 'selectionStart' in active! ? [active!.selectionStart, active!.selectionEnd] : null
-  root.innerHTML = shell(ctx())
+  const c = ctx()
+  root.innerHTML = shell(c)
+  setFavicon(stackHot(c.rows) > 0, c.theme)
   document.documentElement.style.colorScheme = theme()
   if (id) {
     const el = document.getElementById(id) as HTMLInputElement | null

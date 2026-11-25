@@ -406,3 +406,13 @@ describe('collector: markdown', () => {
       'Impact In foo before v2, bad.',
     ))
 })
+
+import { ALARM_COLOR, faviconDataUri } from '../src/lib/favicon'
+describe('favicon', () => {
+  it('draws the tab icon in the alarm colour', () => {
+    const uri = decodeURIComponent(faviconDataUri(ALARM_COLOR.dark))
+    expect(uri.startsWith('data:image/svg+xml,<svg')).toBe(true)
+    expect(uri).toContain('#FF5A4E')
+    expect(uri).not.toContain('#C6FF3D')
+  })
+})
