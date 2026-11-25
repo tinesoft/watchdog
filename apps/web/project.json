@@ -12,7 +12,7 @@
       "dependsOn": ["seed"]
     },
     "build": {
-      "command": "astro build",
+      "command": "astro build && node scripts/build-sw.ts",
       "options": {
         "cwd": "apps/web"
       },

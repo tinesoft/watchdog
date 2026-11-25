@@ -5,6 +5,12 @@ import Base from '../layouts/Base.astro'
 <Base>
   <div id="app"></div>
   <div id="wd-toast" role="status" aria-live="polite"></div>
+  <div id="wd-update" role="alert" hidden>
+    <span>A new version of watchdog is ready.</span>
+    <button type="button" id="wd-update-go">
+      Reload
+    </button>
+  </div>
   <noscript>watchdog needs JavaScript to show and triage threats.</noscript>
   <script>
     import '../scripts/main'

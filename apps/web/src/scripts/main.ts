@@ -1,6 +1,7 @@
 import pkg from '../../package.json'
 import { issueUrl, toCsv, toMarkdown } from '../lib/export'
 import { queryOsv } from '../lib/osv'
+import { registerServiceWorker } from './pwa'
 import { matchDeps, parseDeps, pendingAlerts } from '../lib/scan'
 import type { Dataset, FieldReport, SweepStatus, Threat, TriageStatus } from '../lib/types'
 import { acMatches, inboxOf as inbox, isListView, shell, type Ctx } from './templates'
@@ -511,10 +512,22 @@ addEventListener('hashchange', () => {
 async function fetchDataset<T>(name: string): Promise<Dataset<T> | null> {
   try {
     const res = await fetch(`${base}data/${name}.json`)
+    // The service worker answers from its cache when the network is gone, and says so.
+    if (res.headers.get('x-wd-cache') === 'hit') e.offline = true
     if (!res.ok) throw new Error(String(res.status))
     return (await res.json()) as Dataset<T>
   } catch {
     e.offline = true
+    return null
+  }
+}
+
+/** The Sweep's per-source results. Absent on seed builds, which is not an offline signal. */
+async function fetchStatus(): Promise<SweepStatus | null> {
+  try {
+    const res = await fetch(`${base}data/status.json`)
+    return res.ok ? ((await res.json()) as SweepStatus) : null
+  } catch {
     return null
   }
 }
@@ -529,8 +542,7 @@ async function refresh(): Promise<void> {
   // Offline: keep what is already on screen rather than replacing it with nothing.
   data.threats = threats ?? data.threats ?? { sample: false, collectedAt: null, items: [] }
   data.reports = reports ?? data.reports ?? { sample: false, collectedAt: null, items: [] }
-  data.status =
-    ((await fetchDataset<never>('status')) as unknown as SweepStatus | null) ?? data.status
+  data.status = (await fetchStatus()) ?? data.status
   lastFetch = Date.now()
   render()
   notifyNew()
@@ -545,6 +557,12 @@ async function boot(): Promise<void> {
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && Date.now() - lastFetch > 10 * 60_000) void refresh()
+})
+
+registerServiceWorker(apply => {
+  const bar = document.getElementById('wd-update')!
+  bar.hidden = false
+  document.getElementById('wd-update-go')!.onclick = apply
 })
 
 void boot()

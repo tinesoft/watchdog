@@ -114,3 +114,17 @@ Items in the design that section 2 did not list. All are in the MVP.
 - **Scan dependencies:** the design accepts `package.json`, `package-lock.json`, `requirements.txt`, `go.mod`, `Cargo.lock`, `Gemfile.lock`, `composer.lock` and `pom.xml`, and has a "Check with OSV.dev" option that sends only package names and versions to `api.osv.dev`. This is the one runtime call to another origin. It is opt-in and off by default, and a Scan without it matches only the collected Threats. ADR 0001 is amended accordingly.
 - **Settings:** "Reset everything", and the version shown at the bottom.
 - **Copy mismatch:** the design says the dog patrols "every morning at 06:00". The app says 07:00 and 14:00 UTC, which is what runs.
+
+## 10. Addendum: what the Sweep actually collects (2026-11-25)
+
+Written after trying every endpoint. This replaces the Sources table in section 3 where they differ.
+
+- **Creates Threats:** CISA KEV (exploitation status, and entries added in the last 90 days plus any the last Sweep knew), GitHub Advisory Database (reviewed critical and high advisories from the last 90 days, which carry ecosystem, package, affected and fixed versions), NVD (critical CVEs from the last 30 days, capped at 400, plus per-CVE score lookups, capped at 25 per Sweep).
+- **Adds advisory links to existing Threats:** CERT-FR (advisory pages are opened to read their CVE list), Microsoft MSRC, Spring, Jenkins, Node.js.
+- **Field reports (9 labs):** Kaspersky, ESET, Sophos, Sonatype, Microsoft Security Blog, Google Project Zero, BleepingComputer, The Hacker News, SecurityWeek, last 21 days, 12 per lab.
+- **Link-only (14):** CERT-EU (no feed), CSSF, CIRCL, OSV.dev (used live by Scan instead), GitLab Advisory DB (blocked for bots), Snyk, Docker Scout, Oracle CPU, OpenJDK, NGINX, Palo Alto, Sonar community. CIRCL and OSV can move to collected later.
+- **Threats with no score wait.** A Threat no Source has scored cannot be ranked, so it is held back, and KEV or GitHub rows reuse the previous Sweep's score. Per-CVE NVD lookups are capped because NVD allows 5 requests per 30 seconds without a key.
+- **The previous Sweep is read from the deployed site**, which is how a failing Source keeps its last result without committing data to the repository.
+- **Size:** the first real Sweep produced about 1,000 Threats in 200 KiB gzipped, far under the 1 MB gate.
+- **The Pages deploy runs on every push to `main`** and the release workflow starts one more after it versions, because pushes made with `GITHUB_TOKEN` do not trigger workflows.
+- **Not done:** the CI collect dry-run listed in section 5. A live collection would make CI slow and flaky, so CI tests collectors against fixtures and only the deploy workflow touches the network.
