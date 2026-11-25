@@ -1,0 +1,9 @@
+.claude/worktrees/
+.craftory/state.json
+node_modules/
+dist/
+.astro/
+.nx/
+*.tsbuildinfo
+test-results/
+playwright-report/

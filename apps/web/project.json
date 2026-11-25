@@ -1,0 +1,14 @@
+{
+  "name": "web",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/web/src",
+  "projectType": "application",
+  "targets": {
+    "dev": { "command": "astro dev --host", "options": { "cwd": "apps/web" } },
+    "build": { "command": "astro build", "options": { "cwd": "apps/web" } },
+    "preview": { "command": "astro preview --host", "options": { "cwd": "apps/web" } },
+    "typecheck": { "command": "astro check", "options": { "cwd": "apps/web" } },
+    "lint": { "command": "eslint apps/web" },
+    "test": { "command": "vitest run --passWithNoTests", "options": { "cwd": "apps/web" } }
+  }
+}

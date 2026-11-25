@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "defaultBase": "develop",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*"],
+    "toolchain": [
+      "{workspaceRoot}/eslint.config.mjs",
+      "{workspaceRoot}/.prettierrc.json",
+      "{workspaceRoot}/tsconfig.base.json"
+    ]
+  },
+  "targetDefaults": {
+    "lint": { "cache": true, "inputs": ["default", "toolchain"] },
+    "typecheck": { "cache": true, "inputs": ["default", "toolchain"] },
+    "test": { "cache": true, "inputs": ["default", "toolchain"] },
+    "build": {
+      "cache": true,
+      "inputs": ["default", "toolchain"],
+      "outputs": ["{projectRoot}/dist"]
+    }
+  },
+  "release": {
+    "projects": ["web"],
+    "releaseTag": { "pattern": "v{version}" },
+    "version": { "conventionalCommits": true, "fallbackCurrentVersionResolver": "disk" },
+    "changelog": {
+      "projectChangelogs": { "createRelease": "github" },
+      "workspaceChangelog": false
+    },
+    "git": { "commit": true, "tag": true }
+  },
+  "analytics": false
+}

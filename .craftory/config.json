@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "entry": {
+    "triage": {
+      "enabled": true,
+      "enterAt": "bugs-build-else-align"
+    },
+    "wayfinder": {
+      "suggest": "long-grill",
+      "afterQuestions": 12
+    }
+  },
+  "phases": {
+    "align": {
+      "enabled": true,
+      "gate": true,
+      "command": "grill-with-docs",
+      "model": "session",
+      "effort": "session"
+    },
+    "spec": {
+      "enabled": true,
+      "gate": true,
+      "command": "to-spec",
+      "model": "session",
+      "effort": "session"
+    },
+    "tickets": {
+      "enabled": true,
+      "gate": false,
+      "command": "to-tickets",
+      "model": "session",
+      "effort": "session"
+    },
+    "build": {
+      "enabled": true,
+      "gate": true,
+      "command": "implement-spec",
+      "model": "session",
+      "effort": "session"
+    },
+    "review": {
+      "enabled": true,
+      "gate": true,
+      "model": "session",
+      "effort": "session"
+    },
+    "ship": {
+      "enabled": true,
+      "gate": false,
+      "model": "session",
+      "effort": "session"
+    },
+    "retro": {
+      "enabled": true,
+      "gate": false,
+      "command": "retro",
+      "model": "session",
+      "effort": "session"
+    }
+  },
+  "tracker": {
+    "github": {
+      "specLabel": "spec",
+      "ticketLabel": "ticket"
+    },
+    "gitlab": {
+      "instance": "gitlab.com",
+      "project": ""
+    }
+  },
+  "docs": {
+    "research": "docs/research/"
+  },
+  "worktrees": {
+    "folder": ".claude/worktrees/",
+    "integrationBranch": "feat/{spec-slug}",
+    "ticketBranch": "craftory/{ticket}-{slug}",
+    "maxParallel": 3,
+    "tokenBudget": 80000,
+    "setup": "pnpm install --frozen-lockfile",
+    "copy": [".env.local", ".tool-versions"],
+    "removeAfterMerge": true,
+    "rebaseOnMove": true,
+    "keepFailed": true,
+    "pruneStale": false,
+    "test": "",
+    "testTimeoutSec": 600
+  },
+  "rateLimits": {
+    "throttleAt": 80,
+    "throttledParallel": 1
+  },
+  "routing": {
+    "mainThread": false,
+    "escalateTo": "opus"
+  },
+  "automation": {
+    "suggestNext": true,
+    "liveAgents": true,
+    "underlineTerms": true,
+    "retroOnPr": false,
+    "handoffAt80": false,
+    "weeklyArchitecture": false,
+    "nudgeUnmetDone": false,
+    "archiveOnShip": false
+  },
+  "deny": {
+    "hardGates": false,
+    "skipGate": false,
+    "editOnIntegrationBranch": false,
+    "overBudget": false
+  },
+  "budgets": {
+    "featureUsd": 0,
+    "phaseUsd": {
+      "align": 0,
+      "spec": 0,
+      "tickets": 0,
+      "build": 0,
+      "review": 0,
+      "ship": 0,
+      "retro": 0
+    },
+    "warnAtPercent": 80
+  }
+}
