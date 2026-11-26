@@ -14,4 +14,4 @@ Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/ag
 
 ### Design source
 
-The UI follows the design in `docs/design/`. `Main.dc.html` maps to `src/styles/design.css` (its `<helmet>` CSS), `src/scripts/templates.ts` (markup) and `src/scripts/main.ts` (state). See `docs/agents/design.md`.
+The UI follows the design in `docs/design/`. Code mapping, syncing from the design artifact, and screenshotting a UI change: `docs/agents/design.md`.
