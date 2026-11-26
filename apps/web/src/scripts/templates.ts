@@ -10,6 +10,7 @@ import {
   byRisk,
   filtered,
   inView,
+  labelList,
   type AlertLevel,
   type Data,
   type Ephemeral,
@@ -214,7 +215,7 @@ export function sidebar(c: Ctx): string {
   const barkTitle = hot
     ? `Woof! ${hot} new exploited ${hot === 1 ? 'threat' : 'threats'} in your stack`
     : 'Patrolling. Nothing new in your stack is being exploited'
-  return `${c.e.mobileNav ? '<button type="button" class="nav-backdrop" data-act="toggle-nav" aria-label="Close navigation"></button>' : ''}<nav id="wd-side" aria-label="Views" class="side ${collapsed ? 'side-collapsed' : ''} ${c.e.mobileNav ? 'side-open' : ''}" style="border-right: 1px solid var(--line); padding: 12px 12px 16px; display: flex; flex-direction: column; gap: 2px; background: var(--glass2)">
+  return `${c.e.mobileNav ? '<button type="button" class="nav-backdrop" data-act="toggle-nav" aria-label="Close navigation"></button>' : ''}<nav id="wd-side" data-scroll="side" aria-label="Views" class="side ${collapsed ? 'side-collapsed' : ''} ${c.e.mobileNav ? 'side-open' : ''}" style="border-right: 1px solid var(--line); padding: 12px 12px 16px; display: flex; flex-direction: column; gap: 2px; background: var(--glass2)">
 <div style="display: flex; justify-content: flex-end; padding-bottom: 6px" class="side-top"><button type="button" class="nav side-toggle" data-act="side" aria-label="${collapsed ? 'Expand sidebar' : 'Collapse sidebar'}" aria-expanded="${!collapsed}" title="${collapsed ? 'Expand sidebar' : 'Collapse sidebar'}" style="width: 40px; min-height: 40px; padding: 0; justify-content: center">${collapsed ? icons.sideExpand : icons.sideCollapse}</button></div>
 ${nav
   .map(
@@ -294,10 +295,13 @@ export function listView(c: Ctx): string {
     )
     .join('')}</div>
 <button type="button" class="pick ${c.e.exp ? 'pick-on' : ''}" data-act="exploited" aria-pressed="${c.e.exp}" style="gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--crit)"></span>Exploited only</button><span class="mono" style="margin-left: auto; font-size: 12px; color: var(--dim)">Riskiest first</span></div>
-${shown.length === 0 ? emptyState(c) : ''}
-<div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface)">${shown.map(v => row(v, v.id === c.e.sel)).join('')}</div>
+${paneScroll(c)}${shown.length === 0 ? emptyState(c) : ''}
+<div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface)">${shown.map(v => row(v, v.id === c.e.sel)).join('')}</div></div>
 ${legend()}`
 }
+
+/** The part of a page below its header. On large screens it scrolls by itself while the header stays put. */
+const paneScroll = (c: Ctx) => `<div class="pane-scroll" data-scroll="main-${c.e.view}">`
 
 function emptyState(c: Ctx): string {
   const msg =
@@ -322,6 +326,12 @@ function advisoriesBox(v: Row): string {
     .join('')}</div>`
 }
 
+/** Holds the details column on large screens while nothing is picked; hidden below that. */
+const detailEmpty = `<aside aria-label="Threat details" class="detail-pane detail-empty" style="flex: 1 1 380px; max-width: 460px; min-width: 0; border-left: 1px solid var(--line); background: var(--bg2); padding: 20px 22px 40px; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" style="color: var(--dim)"><circle cx="10" cy="10" r="6"></circle><path d="M14.5 14.5L21 21"></path></svg>
+<span class="mono" style="font-size: 12px; color: var(--lime); letter-spacing: .12em; text-transform: uppercase">under the magnifier</span>
+<span style="font-size: 14px; color: var(--muted); max-width: 260px">Pick a threat from the list to see its details, fix and triage here.</span></aside>`
+
 export function detail(c: Ctx): string {
   const v = c.rows.find(r => r.id === c.e.sel)
   if (!v) return ''
@@ -335,7 +345,7 @@ export function detail(c: Ctx): string {
     .join('')
   const cmdBox = (text: string) =>
     `<div class="cmd"><code>${esc(text)}</code><button type="button" data-act="copy" data-arg="${esc(text)}" class="mono" style="all: unset; cursor: pointer; border-left: 1px solid var(--line2); background: var(--surface); color: var(--text2); padding: 10px 12px; font: 600 12px 'JetBrains Mono', monospace">Copy</button></div>`
-  return `<aside aria-label="Threat details" class="panel-in" style="flex: 1 1 380px; max-width: 460px; min-width: 0; border-left: 1px solid var(--line); background: var(--bg2); padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 18px">
+  return `<aside aria-label="Threat details" class="panel-in detail-pane" data-scroll="detail-${esc(v.id)}" style="flex: 1 1 380px; max-width: 460px; min-width: 0; border-left: 1px solid var(--line); background: var(--bg2); padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; justify-content: space-between; align-items: center"><span class="mono" style="font-size: 12px; color: var(--lime); letter-spacing: .12em; text-transform: uppercase">under the magnifier</span><button type="button" class="btn" data-act="close-detail" aria-label="Close details" style="width: 44px; padding: 0; color: var(--text2)">${closeIcon()}</button></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="mono" style="font-size: 21px; font-weight: 700">${esc(v.id)}</span><h2 style="margin: 0; font-size: 19px; line-height: 1.3">${esc(v.title)}</h2></div>
 <div style="display: flex; flex-direction: column; gap: 8px" class="ic-${v.severity}"><div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--muted)"><span>CVSS base score · ${esc(v.published)}</span><b class="mono ic-${v.severity}" style="font-size: 26px">${v.cvss.toFixed(1)}</b></div><div style="height: 8px; border-radius: 4px; background: var(--line); overflow: hidden"><div style="height: 100%; width: ${Math.round(v.cvss * 10)}%; background: currentColor; border-radius: 4px"></div></div></div>
@@ -375,7 +385,7 @@ export function stackView(c: Ctx): string {
   const m = acMatches(c)
   const idx = Math.min(c.e.acIndex, Math.max(m.length - 1, 0))
   return `<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">My stack</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Tell the dog what you run. Matching threats land in your inbox and raise the alarm.</p></div>
-<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px"><h2 style="margin: 0; font-size: 18px">Quick add</h2>
+${paneScroll(c)}<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px"><h2 style="margin: 0; font-size: 18px">Quick add</h2>
 <div style="display: flex; flex-wrap: wrap; gap: 8px">${presets
     .map(([label, term]) => {
       const on = c.p.stack.includes(term)
@@ -402,7 +412,7 @@ ${
       n =>
         `<span style="display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 4px 0 12px; border-radius: 999px; border: 1px solid var(--lime); color: var(--text); font: 500 13px 'JetBrains Mono', monospace">${esc(n)}<button type="button" data-act="stack-remove" data-arg="${esc(n)}" aria-label="Remove ${esc(n)}" style="all: unset; box-sizing: border-box; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--dim); cursor: pointer">${closeIcon(16)}</button></span>`,
     )
-    .join('')}</div></div></div>`
+    .join('')}</div></div></div></div>`
 }
 
 // ---- sources ------------------------------------------------------------
@@ -422,7 +432,7 @@ export function sourcesView(c: Ctx): string {
       : `<span class="mono" style="font-size: 11px; color: var(--crit-t)" title="${esc(r.error ?? '')}">✗ failed, kept last result</span>`
   }
   return `<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px"><div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Sources</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">${sourceTotal()} trusted sources the dog patrols twice a day, at 07:00 and 14:00 UTC, in ${sourceGroups.length} groups.${c.data.status ? ` Last sweep ${esc(c.data.status.collectedAt.slice(0, 16).replace('T', ' '))} UTC.` : ''}</p></div></div>
-<div style="display: flex; flex-direction: column; gap: 16px">${sourceGroups
+${paneScroll(c)}<div style="display: flex; flex-direction: column; gap: 16px">${sourceGroups
     .map(
       g => `<section class="srcgroup" aria-label="${esc(g.name)}"><div style="display: flex; align-items: center; gap: 12px"><span class="srcgroup-ic" style="color: ${g.color}">${icons[g.icon]}</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="display: flex; align-items: baseline; gap: 8px"><h2 style="margin: 0; font-size: 17px">${esc(g.name)}</h2><span class="mono" style="font-size: 12px; color: var(--dim)">${g.items.length}</span></span><span style="font-size: 12.5px; line-height: 1.45; color: var(--muted)">${esc(g.desc)}</span></span></div>
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 2px">${g.items
@@ -432,7 +442,7 @@ export function sourcesView(c: Ctx): string {
         )
         .join('')}</div></section>`,
     )
-    .join('')}</div>`
+    .join('')}</div></div>`
 }
 
 // ---- field reports ------------------------------------------------------
@@ -467,7 +477,7 @@ export function reportsView(c: Ctx): string {
   return `<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px"><div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Field reports</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Research from antivirus vendors and security labs, linked to the threats it covers.</p></div><a href="#" data-act="go" data-arg="sources" class="mono" style="font-size: 13px">Lab feeds in Sources →</a></div>
 ${d?.sample ? '<div style="border: 1px solid var(--lime); background: var(--sel-bg); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--text2)">These are <b style="color: var(--text)">sample reports</b>. The daily sweep fills this page with the last three weeks of posts from each lab’s feed.</div>' : ''}
 <div style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2); align-self: flex-start">${chip('all', 'All labs', items.length)}${labs.map(([k, l]) => chip(k, SHORT[k] ?? l, items.filter(r => r.key === k).length)).join('')}</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px">${shown
+${paneScroll(c)}<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px">${shown
     .map(r => {
       const col = color(r.key)
       const site = (() => {
@@ -489,7 +499,7 @@ ${d?.sample ? '<div style="border: 1px solid var(--lime); background: var(--sel-
 ${r.cves.length ? `<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span style="font-size: 12px; color: var(--dim)">Covers</span>${r.cves.map(id => (known.has(id) ? `<button type="button" class="cvechip cvechip-feed" data-act="open-cve" data-arg="${esc(id)}" title="Open in watchdog">${esc(id)}</button>` : `<span class="cvechip" title="Not in the current feed">${esc(id)}</span>`)).join('')}</div>` : ''}
 <a href="${esc(safeUrl(r.url))}" target="_blank" rel="noopener" class="mono" style="margin-top: auto; font-size: 13px; align-self: flex-start; padding: 8px 0">Read on ${esc(site)} ↗</a></article>`
     })
-    .join('')}</div>`
+    .join('')}</div></div>`
 }
 
 // ---- scan ---------------------------------------------------------------
@@ -530,7 +540,7 @@ ${osvOnly
   .join('')}
 ${vulnerable === 0 ? `<div style="border: 1px dashed var(--line2); border-radius: 12px; padding: 20px; text-align: center; color: var(--muted)"><b style="color: var(--text)">Clean.</b> Nothing known in these ${s.deps.length} dependencies.</div>` : ''}`
   return `<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Scan dependencies</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Drop a manifest or lockfile. watchdog checks every dependency against today’s feed, then tells you what to upgrade.</p></div>
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; align-items: start">
+${paneScroll(c)}<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; align-items: start">
 <div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px">
 <label for="wd-scan-file" data-drop style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 26px 16px; border: 1.5px dashed var(--line2); border-radius: 12px; color: var(--muted); cursor: pointer"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"></path></svg><b style="color: var(--text)">${c.e.scanFile ? esc(c.e.scanFile) : 'package.json'}</b><span class="mono" style="font-size: 11px; line-height: 1.6">package-lock.json · requirements.txt · go.mod · Cargo.lock · Gemfile.lock · composer.lock · pom.xml</span></label>
 <input id="wd-scan-file" data-in="scan-file" type="file" style="position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none">
@@ -538,10 +548,20 @@ ${vulnerable === 0 ? `<div style="border: 1px dashed var(--line2); border-radius
 <textarea id="wd-scan-text" data-in="scan-text" rows="8" spellcheck="false" placeholder="${esc(SAMPLE_SCAN)}" style="width: 100%; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text2); padding: 12px; font: 400 13px 'JetBrains Mono', monospace; resize: vertical">${esc(c.e.scanText)}</textarea>
 <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text2); min-height: 44px; cursor: pointer"><input type="checkbox" data-in="scan-osv" ${c.e.scanOsv ? 'checked' : ''} style="width: 18px; height: 18px; accent-color: var(--lime)">Check with OSV.dev</label><button type="button" class="btn btn-p" data-act="scan-run" style="margin-left: auto" ${c.e.scanBusy ? 'disabled' : ''}>${c.e.scanBusy ? 'Sniffing…' : 'Sniff it'}</button></div>
 <span style="font-size: 12px; color: var(--dim)">Files are read in your browser. Without the OSV box ticked nothing leaves it. With it, only package names, ecosystems and versions go to api.osv.dev.</span></div>
-<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 12px" aria-live="polite">${results}</div></div>`
+<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 12px" aria-live="polite">${results}</div></div></div>`
 }
 
 // ---- settings -----------------------------------------------------------
+
+const removeIcon =
+  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>'
+
+function labelField(c: Ctx): string {
+  const labels = labelList(c.p.labels)
+  return `<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)"><label for="wd-labels">Labels added to new issues</label>
+<div class="chipbox">${labels.map(l => `<span class="lchip">${esc(l)}<button type="button" data-act="label-remove" data-arg="${esc(l)}" aria-label="Remove label ${esc(l)}">${removeIcon}</button></span>`).join('')}<input id="wd-labels" data-in="label-draft" value="${esc(c.e.labelDraft)}" placeholder="${labels.length ? 'Add another label' : 'e.g. security'}" autocomplete="off" style="flex: 1 1 120px; min-width: 120px; min-height: 32px; border: 0; padding: 0 4px; background: transparent; color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none"></div>
+<span style="font-size: 12px; color: var(--dim)">Press Enter or comma to add a label. Backspace in the empty field removes the last one.</span></div>`
+}
 
 export function settings(c: Ctx): string {
   if (!c.e.settingsOpen) return ''
@@ -554,7 +574,7 @@ export function settings(c: Ctx): string {
 <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 18px 22px; border-bottom: 1px solid var(--line)"><h2 id="wd-set-title" style="margin: 0; font-size: 20px; letter-spacing: -0.02em">Settings</h2><button type="button" class="btn" data-act="close-settings" aria-label="Close settings" style="width: 40px; min-height: 40px; padding: 0; color: var(--text2)">${closeIcon()}</button></div>
 <div style="padding: 18px 22px; display: flex; flex-direction: column; gap: 22px">
 <div style="display: flex; flex-direction: column; gap: 8px">${h('Appearance')}<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px"><span style="font-size: 14px; color: var(--text)">Theme</span><div style="display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg)">${(['dark', 'light'] as const).map(t => `<button type="button" class="seg ${c.theme === t ? 'seg-on' : ''}" data-act="set-theme" data-arg="${t}">${t === 'dark' ? 'Dark' : 'Light'}</button>`).join('')}</div></div></div>
-<div style="display: flex; flex-direction: column; gap: 10px">${h('GitHub issues')}${input('wd-repo', 'repo', 'Repository for “Open GitHub issue”', c.p.repo, 'owner/repo')}${input('wd-labels', 'labels', 'Labels added to new issues', c.p.labels, 'security, vulnerability')}<span style="font-size: 12px; color: var(--dim)">Issues open pre-filled on github.com. Nothing is posted without you.</span></div>
+<div style="display: flex; flex-direction: column; gap: 10px">${h('GitHub issues')}${input('wd-repo', 'repo', 'Repository for “Open GitHub issue”', c.p.repo, 'owner/repo')}${labelField(c)}<span style="font-size: 12px; color: var(--dim)">Issues open pre-filled on github.com. Nothing is posted without you.</span></div>
 <div style="display: flex; flex-direction: column; gap: 10px">${h('Your data')}<span style="font-size: 13px; line-height: 1.5; color: var(--muted)">Your stack (${c.p.stack.length} entries), triage statuses (${Object.keys(c.p.triage).length}) and notes live in this browser only. Export them to move machines or share with your team.</span>
 <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="btn btn-g" data-act="export-json" style="min-height: 40px; font-size: 13px">Export JSON</button><button type="button" class="btn btn-g" data-act="import-json" style="min-height: 40px; font-size: 13px">Import JSON</button><button type="button" class="btn" data-act="reset" style="min-height: 40px; font-size: 13px; border: 1px solid var(--crit); color: var(--crit-t)">Reset everything</button></div></div>
 </div>
@@ -580,7 +600,7 @@ export function main(c: Ctx): string {
 export function shell(c: Ctx): string {
   const showDetail = isListView(c.e.view) && c.e.sel && c.rows.some(r => r.id === c.e.sel)
   return `<div class="wd-${c.theme}" style="position: relative; min-height: 100vh; background-color: var(--bg); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 40px 40px; color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 15px">
-${header(c)}<div style="display: flex; flex-wrap: wrap; align-items: stretch; min-height: calc(100vh - 64px)">${sidebar(c)}<main id="wd-main" class="mainpane" tabindex="-1" style="flex: 999 1 520px; min-width: 0; padding: 24px 28px 48px; display: flex; flex-direction: column; gap: 18px; outline: none">${main(c)}</main>${showDetail ? detail(c) : ''}</div>${settings(c)}</div>`
+${header(c)}<div class="layout" style="display: flex; flex-wrap: wrap; align-items: stretch; min-height: calc(100vh - 64px)">${sidebar(c)}<main id="wd-main" class="mainpane" tabindex="-1" style="flex: 999 1 520px; min-width: 0; padding: 24px 28px 48px; display: flex; flex-direction: column; gap: 18px; outline: none">${main(c)}</main>${showDetail ? detail(c) : isListView(c.e.view) ? detailEmpty : ''}</div>${settings(c)}</div>`
 }
 
 export { byRisk }

@@ -140,6 +140,27 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 .nav-backdrop{all:unset;display:block;position:fixed;inset:60px 0 0 0;z-index:35;background:rgba(4,6,8,.5)}
 .mainpane{padding:16px 14px 40px !important}
 }
+.chipbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:44px;padding:5px 8px;border-radius:10px;border:1px solid var(--line2);background:var(--surface);cursor:text;transition:border-color .2s}
+.chipbox:focus-within{border-color:var(--lime)}
+.lchip{display:inline-flex;align-items:center;gap:4px;height:30px;padding:0 4px 0 10px;border-radius:999px;background:var(--sel-bg);border:1px solid var(--lime);color:var(--text);font:500 13px 'JetBrains Mono',monospace}
+.lchip button{all:unset;box-sizing:border-box;width:24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:var(--dim);cursor:pointer}
+.lchip button:hover{color:var(--crit-t);background:var(--bg)}
+.lchip button:focus-visible{outline:2px solid var(--lime)}
+.detail-empty{display:none}
+/* Large screens: top bar, sidebar and details panel stay in view; only the middle column scrolls with the page. */
+@media (min-width: 1100px){
+.topbar{position:sticky !important;top:0}
+.layout{flex-wrap:nowrap !important;align-items:flex-start !important}
+.side{position:sticky;top:64px;align-self:flex-start;height:calc(100vh - 64px);overflow-y:auto;overscroll-behavior:contain}
+.detail-pane{position:sticky;top:64px;align-self:flex-start;height:calc(100vh - 64px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.detail-empty{display:flex}
+}
+.pane-scroll{display:flex;flex-direction:column;gap:18px}
+@media (min-width: 1100px){
+.mainpane{height:calc(100vh - 64px);overflow:hidden;padding-bottom:16px !important;position:sticky;top:64px;align-self:flex-start}
+.pane-scroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin:0 -8px;padding:2px 8px 8px;scrollbar-gutter:stable;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.legend-pin{position:static !important;flex:none}
+}
 .mascot-alarm{animation:shake .5s 3}
 .eye{animation:blink 1s steps(1) infinite}
 .panel-in{animation:slidein .3s both}
@@ -263,6 +284,7 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 <button type="button" class="pick {{expCls}}" onClick="{{toggleExp}}" style="gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--crit)"></span>Exploited only</button>
 <span class="mono" style="margin-left: auto; font-size: 12px; color: var(--dim)">Riskiest first</span>
 </div>
+<div class="pane-scroll">
 <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
 <div style="border: 1px dashed var(--line2); border-radius: 14px; padding: 40px 20px; text-align: center; color: var(--muted)"><b style="color: var(--text)">Inbox zero.</b> Nothing new since you last cleared it. The dog keeps patrolling.</div>
 </sc-if>
@@ -289,6 +311,7 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 </button>
 </sc-for>
 </div>
+</div>
 <section aria-label="What the icons mean" class="legend-pin" style="display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); container-type: inline-size">
 <span class="mono lg-key" style="flex: none; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-right: 2px">Key</span>
 <span class="lg" tabindex="0" aria-describedby="lg-virus"><span class="lg-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 7V3M12 21v-4M7 12H3M21 12h-4M8.5 8.5L5.6 5.6M18.4 18.4l-2.9-2.9M15.5 8.5l2.9-2.9M5.6 18.4l2.9-2.9"></path></svg></span><span class="lg-label">Virus</span><span class="lg-tip" role="tooltip" id="lg-virus">Runs code where it shouldn’t: remote code execution, command injection, unsafe deserialization, memory corruption.</span></span>
@@ -305,6 +328,7 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 
 <sc-if value="{{isScan}}" hint-placeholder-val="{{ false }}">
 <div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Scan dependencies</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Drop a manifest or lockfile. watchdog checks every dependency against OSV and today’s feed, then tells you what to upgrade.</p></div>
+<div class="pane-scroll">
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; align-items: start">
 <div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px">
 <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 26px 16px; border: 1.5px dashed var(--line2); border-radius: 12px; color: var(--muted)">
@@ -327,6 +351,7 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 </sc-for>
 </div>
 </div>
+</div>
 </sc-if>
 
 <sc-if value="{{isReports}}" hint-placeholder-val="{{ false }}">
@@ -338,6 +363,7 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 <div style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2); align-self: flex-start">
 <sc-for list="{{labChips}}" as="lc" hint-placeholder-count="6"><button type="button" class="seg {{lc.cls}}" onClick="{{lc.pick}}">{{lc.label}}<span class="mono" style="font-size: 11px; color: var(--dim)">{{lc.count}}</span></button></sc-for>
 </div>
+<div class="pane-scroll">
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px">
 <sc-for list="{{reportCards}}" as="rp" hint-placeholder-count="6">
 <article class="repcard">
@@ -356,12 +382,14 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 </article>
 </sc-for>
 </div>
+</div>
 </sc-if>
 
 <sc-if value="{{isSources}}" hint-placeholder-val="{{ false }}">
 <div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
 <div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Sources</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">{{sourceTotal}} trusted sources the dog patrols every morning at 06:00, in {{sourceGroupCount}} groups.</p></div>
 </div>
+<div class="pane-scroll">
 <div style="display: flex; flex-direction: column; gap: 16px">
 <sc-for list="{{sourceGroups}}" as="g" hint-placeholder-count="5">
 <section class="srcgroup" aria-label="{{g.name}}">
@@ -380,10 +408,12 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 </section>
 </sc-for>
 </div>
+</div>
 </sc-if>
 
 <sc-if value="{{isStackEdit}}" hint-placeholder-val="{{ false }}">
 <div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">My stack</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Tell the dog what you run. Matching threats land in your inbox and raise the alarm.</p></div>
+<div class="pane-scroll">
 <div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px">
 <h2 style="margin: 0; font-size: 18px">Quick add</h2>
 <div style="display: flex; flex-wrap: wrap; gap: 8px">
@@ -419,11 +449,19 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 </div>
 </div>
 </div>
+</div>
 </sc-if>
 </main>
 
+<sc-if value="{{showDetailEmpty}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="Threat details" class="detail-pane detail-empty" style="flex: 1 1 380px; max-width: 460px; min-width: 0; border-left: 1px solid var(--line); background: var(--bg2); padding: 20px 22px 40px; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center">
+<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true" style="color: var(--dim)"><circle cx="10" cy="10" r="6"></circle><path d="M14.5 14.5L21 21"></path></svg>
+<span class="mono" style="font-size: 12px; color: var(--lime); letter-spacing: .12em; text-transform: uppercase">under the magnifier</span>
+<span style="font-size: 14px; color: var(--muted); max-width: 260px">Pick a threat from the list to see its details, fix and triage here.</span>
+</aside>
+</sc-if>
 <sc-if value="{{showDetail}}" hint-placeholder-val="{{ true }}">
-<aside aria-label="Threat details" class="panel-in" style="flex: 1 1 380px; max-width: 460px; min-width: 0; border-left: 1px solid var(--line); background: var(--bg2); padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 18px">
+<aside aria-label="Threat details" class="panel-in detail-pane" style="flex: 1 1 380px; max-width: 460px; min-width: 0; border-left: 1px solid var(--line); background: var(--bg2); padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 18px">
 <div style="display: flex; justify-content: space-between; align-items: center"><span class="mono" style="font-size: 12px; color: var(--lime); letter-spacing: .12em; text-transform: uppercase">under the magnifier</span><button type="button" class="btn" onClick="{{closeSel}}" aria-label="Close details" style="width: 44px; padding: 0; color: var(--text2)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></div>
 <div style="display: flex; flex-direction: column; gap: 6px"><span class="mono" style="font-size: 21px; font-weight: 700">{{sel.id}}</span><h2 style="margin: 0; font-size: 19px; line-height: 1.3">{{sel.title}}</h2></div>
 <div style="display: flex; flex-direction: column; gap: 8px" class="ic-{{sel.severity}}">
@@ -479,8 +517,14 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 <span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">GitHub issues</span>
 <label for="wd-repo" style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">Repository for “Open GitHub issue”
 <input id="wd-repo" value="{{repo}}" onChange="{{onRepo}}" placeholder="owner/repo" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface); color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none"></label>
-<label for="wd-labels" style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">Labels added to new issues
-<input id="wd-labels" value="{{labels}}" onChange="{{onLabels}}" placeholder="security, vulnerability" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface); color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none"></label>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">
+<label for="wd-labels">Labels added to new issues</label>
+<div class="chipbox">
+<sc-for list="{{labelChips}}" as="lb" hint-placeholder-count="1"><span class="lchip">{{lb.name}}<button type="button" onClick="{{lb.remove}}" aria-label="Remove label {{lb.name}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></span></sc-for>
+<input id="wd-labels" value="{{labelDraft}}" onChange="{{onLabelDraft}}" onKeyDown="{{onLabelKey}}" placeholder="{{labelPlaceholder}}" autocomplete="off" style="flex: 1 1 120px; min-width: 120px; min-height: 32px; border: 0; padding: 0 4px; background: transparent; color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none">
+</div>
+<span style="font-size: 12px; color: var(--dim)">Press Enter or comma to add a label. Backspace in the empty field removes the last one.</span>
+</div>
 <span style="font-size: 12px; color: var(--dim)">Issues open pre-filled on github.com. Nothing is posted without you.</span>
 </div>
 <div style="display: flex; flex-direction: column; gap: 10px">
@@ -518,7 +562,7 @@ class Component extends DCLogic {
   componentWillUnmount() { clearInterval(this.wdTimer); }
   constructor(props) {
     super(props);
-    this.state = { mobileNav: false, now: Date.now(), lab: 'all', sideCollapsed: false, acQuery: '', acIndex: 0, settingsOpen: false, repo: 'acme/api', labels: 'security', theme: null, alertsOpen: false, alertsOn: true, alertLevel: 'stack', view: 'inbox', sel: 'CVE-2025-29927', cat: 'all', exp: false, q: '', triage: { 'CVE-2024-6387': 'patched' }, stack: ['next', 'windows', 'openssh'], cleared: false };
+    this.state = { mobileNav: false, now: Date.now(), lab: 'all', sideCollapsed: false, acQuery: '', acIndex: 0, settingsOpen: false, repo: 'acme/api', labelChips: ['security'], labelDraft: '', theme: null, alertsOpen: false, alertsOn: true, alertLevel: 'stack', view: 'inbox', sel: 'CVE-2025-29927', cat: 'all', exp: false, q: '', triage: { 'CVE-2024-6387': 'patched' }, stack: ['next', 'windows', 'openssh'], cleared: false };
   }
   renderVals() {
     var self = this, st = this.state;
@@ -656,8 +700,27 @@ class Component extends DCLogic {
       }),
       repo: st.repo,
       onRepo: function (e) { self.setState({ repo: e.target.value }); },
-      labels: st.labels,
-      onLabels: function (e) { self.setState({ labels: e.target.value }); },
+      labelChips: st.labelChips.map(function (n) { return { name: n, remove: function () { self.setState({ labelChips: st.labelChips.filter(function (x) { return x !== n; }) }); } }; }),
+      labelDraft: st.labelDraft,
+      labelPlaceholder: st.labelChips.length ? 'Add another label' : 'e.g. security',
+      onLabelDraft: function (e) {
+        var v = e.target.value;
+        if (v.indexOf(',') !== -1) {
+          var parts = v.split(','), add = parts.slice(0, -1).map(function (p) { return p.trim(); }).filter(Boolean);
+          var next = st.labelChips.slice(); add.forEach(function (p) { if (next.indexOf(p) === -1) next.push(p); });
+          self.setState({ labelChips: next, labelDraft: parts[parts.length - 1] });
+        } else self.setState({ labelDraft: v });
+      },
+      onLabelKey: function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          var v = (st.labelDraft || '').trim();
+          if (v && st.labelChips.indexOf(v) === -1) self.setState({ labelChips: st.labelChips.concat([v]), labelDraft: '' });
+          else self.setState({ labelDraft: '' });
+        } else if (e.key === 'Backspace' && !st.labelDraft && st.labelChips.length) {
+          self.setState({ labelChips: st.labelChips.slice(0, -1) });
+        }
+      },
       stackCount: st.stack.length,
       triageCount: Object.keys(st.triage).length,
       isSources: st.view === 'sources',
@@ -745,6 +808,7 @@ class Component extends DCLogic {
       rows: rows,
       empty: rows.length === 0,
       showDetail: isList && !!sel,
+      showDetailEmpty: isList && !sel,
       sel: selVals,
       closeSel: function () { self.setState({ sel: null }); },
       statusPicks: [['investigating', 'Investigating'], ['patched', 'Patched'], ['not_affected', 'Not affected'], ['ignored', 'Ignored']].map(function (p) {

@@ -19,6 +19,7 @@ import {
   filtered,
   inView,
   KEY,
+  labelList,
   load,
   rowsOf,
   sanitize,
@@ -46,6 +47,7 @@ const e: Ephemeral = {
   lab: 'all',
   acQuery: '',
   acIndex: 0,
+  labelDraft: '',
   alertsOpen: false,
   settingsOpen: false,
   mobileNav: false,
@@ -97,8 +99,19 @@ function render(): void {
   const id = active?.id
   const caret =
     id && 'selectionStart' in active! ? [active!.selectionStart, active!.selectionEnd] : null
+  // Inner scrollers (large screens) are rebuilt on every render; keep each one where it was.
+  const scrolls = new Map(
+    [...root.querySelectorAll<HTMLElement>('[data-scroll]')].map(el => [
+      el.dataset.scroll,
+      el.scrollTop,
+    ]),
+  )
   const c = ctx()
   root.innerHTML = shell(c)
+  for (const el of root.querySelectorAll<HTMLElement>('[data-scroll]')) {
+    const top = scrolls.get(el.dataset.scroll)
+    if (top) el.scrollTop = top
+  }
   setFavicon(stackHot(c.rows), c.theme)
   document.documentElement.style.colorScheme = theme()
   if (id) {
@@ -114,6 +127,11 @@ const persist = () => save(localStorage, p)
 const commit = () => {
   persist()
   render()
+}
+
+function setLabels(labels: string[]): void {
+  p = { ...p, labels: labelList(labels.join(',')).join(',') }
+  commit()
 }
 
 let toastTimer = 0
@@ -386,6 +404,10 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     const m = acMatches(ctx())
     addToStack(m.length ? m[Math.min(e.acIndex, m.length - 1)]!.label : e.acQuery)
   },
+  'label-remove': a => {
+    setLabels(labelList(p.labels).filter(x => x !== a))
+    document.getElementById('wd-labels')?.focus()
+  },
   'stack-remove': a => {
     p = { ...p, stack: p.stack.filter(x => x !== a) }
     commit()
@@ -480,15 +502,29 @@ root.addEventListener('input', ev => {
       p = { ...p, repo: el.value }
       persist()
       break
-    case 'labels':
-      p = { ...p, labels: el.value }
-      persist()
+    case 'label-draft': {
+      // A comma ends a label, so pasting "a, b, c" makes three chips.
+      const parts = el.value.split(',')
+      e.labelDraft = parts.pop()!
+      if (parts.length) setLabels([...labelList(p.labels), ...parts])
       break
+    }
   }
 })
 
 root.addEventListener('keydown', ev => {
   const el = ev.target as HTMLElement
+  if (el.dataset.in === 'label-draft') {
+    const labels = labelList(p.labels)
+    if (ev.key === 'Enter') {
+      ev.preventDefault()
+      e.labelDraft = ''
+      setLabels([...labels, (el as HTMLInputElement).value])
+    } else if (ev.key === 'Backspace' && !e.labelDraft && labels.length) {
+      setLabels(labels.slice(0, -1))
+    }
+    return
+  }
   if (el.dataset.in !== 'ac') return
   const m = acMatches(ctx())
   if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {

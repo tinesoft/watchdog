@@ -64,3 +64,50 @@ test('the next-sweep countdown ticks down by itself', async ({ page }) => {
   await page.clock.fastForward('30:00')
   await expect(pill).toHaveText('swept 1 h ago · next in 5h30')
 })
+
+test('issue labels are chips: Enter and comma add, Backspace and × remove', async ({ page }) => {
+  await page.goto('./')
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const field = page.getByLabel('Labels added to new issues')
+  const chips = page.locator('.lchip')
+  await expect(chips).toHaveText(['security'])
+  await field.fill('vulnerability')
+  await field.press('Enter')
+  await field.pressSequentially('triage,')
+  await expect(chips).toHaveText(['security', 'vulnerability', 'triage'])
+  await expect(field).toHaveValue('')
+  await expect(field).toBeFocused()
+  await field.press('Backspace')
+  await page.getByRole('button', { name: 'Remove label security' }).click()
+  await expect(chips).toHaveText(['vulnerability'])
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('watchdog:v1')!).labels)
+  expect(saved).toBe('vulnerability')
+})
+
+test('on a large screen only the page body scrolls; the frame stays in view', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 480 })
+  await page.goto('./')
+  await page.getByRole('button', { name: /^All threats/ }).click()
+  const body = page.locator('.pane-scroll')
+  await expect(page.locator('.detail-empty')).toBeVisible()
+  await body.hover()
+  await page.mouse.wheel(0, 3000)
+  await expect.poll(() => body.evaluate(el => el.scrollTop)).toBeGreaterThan(0)
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBe(480)
+  expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  for (const el of [
+    page.locator('.topbar'),
+    page.locator('#wd-side'),
+    page.getByRole('heading', { level: 1 }),
+    page.getByRole('button', { name: /^Exploited only/ }),
+    page.getByRole('region', { name: 'What the icons mean' }),
+  ])
+    await expect(el).toBeInViewport({ ratio: 1 })
+  // Picking a row keeps the list where it was and fills the details column.
+  const before = await body.evaluate(el => el.scrollTop)
+  await page.locator('.trow').last().click()
+  await expect(page.locator('.detail-pane.panel-in')).toBeVisible()
+  expect(await body.evaluate(el => el.scrollTop)).toBe(before)
+  const pane = page.locator('.detail-pane')
+  expect(await pane.evaluate(el => getComputedStyle(el).overflowY)).toBe('auto')
+})

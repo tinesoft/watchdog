@@ -1035,6 +1035,124 @@ a:hover {
     right: 0;
   }
 }
+/* Settings: issue labels as chips */
+.chipbox {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line2);
+  background: var(--surface);
+  cursor: text;
+  transition: border-color 0.2s;
+}
+.chipbox:focus-within {
+  border-color: var(--lime);
+}
+/* The box's lime border is the focus ring; the field inside needs none of its own. */
+.chipbox input:focus-visible {
+  outline: none !important;
+}
+.lchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 4px 0 10px;
+  border-radius: 999px;
+  background: var(--sel-bg);
+  border: 1px solid var(--lime);
+  color: var(--text);
+  font:
+    500 13px 'JetBrains Mono',
+    monospace;
+}
+.lchip button {
+  all: unset;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--dim);
+  cursor: pointer;
+}
+.lchip button:hover {
+  color: var(--crit-t);
+  background: var(--bg);
+}
+.lchip button:focus-visible {
+  outline: 2px solid var(--lime);
+}
+.detail-empty {
+  display: none;
+}
+.pane-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+/* Large screens: the top bar, sidebar, page header, legend and details panel stay in view;
+   the sidebar, the page body and the details panel each scroll on their own. */
+@media (min-width: 1100px) {
+  .topbar {
+    position: sticky !important;
+    top: 0;
+  }
+  .layout {
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+    min-height: 0 !important;
+  }
+  .side,
+  .detail-pane,
+  .mainpane {
+    position: sticky;
+    /* The top bar's 64px plus its 1px bottom border. */
+    top: 65px;
+    align-self: flex-start;
+    height: calc(100vh - 65px);
+  }
+  .side,
+  .detail-pane {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .detail-pane,
+  .pane-scroll {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--line2) transparent;
+  }
+  .detail-empty {
+    display: flex;
+  }
+  .mainpane {
+    overflow: hidden;
+    padding-bottom: 16px !important;
+  }
+  .pane-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: 0 -8px;
+    padding: 2px 8px 8px;
+  }
+  /* The page body scrolls instead of squeezing its blocks (the threat list clips its overflow). */
+  .pane-scroll > * {
+    flex-shrink: 0;
+  }
+  .legend-pin {
+    position: static;
+    flex: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

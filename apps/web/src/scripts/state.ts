@@ -49,6 +49,8 @@ export interface Ephemeral {
   lab: string
   acQuery: string
   acIndex: number
+  /** Text typed in the Settings label field that is not a chip yet. */
+  labelDraft: string
   alertsOpen: boolean
   settingsOpen: boolean
   mobileNav: boolean
@@ -61,6 +63,16 @@ export interface Ephemeral {
 }
 
 export const KEY = 'watchdog:v1'
+
+/** The issue labels, stored as one comma-separated string, as distinct chips. */
+export const labelList = (labels: string): string[] => [
+  ...new Set(
+    labels
+      .split(',')
+      .map(l => l.trim())
+      .filter(Boolean),
+  ),
+]
 
 export const defaults = (): Persisted => ({
   theme: null,
