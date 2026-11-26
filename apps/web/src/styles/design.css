@@ -998,8 +998,14 @@ a:hover {
   }
   .side-collapsed .n-hot,
   .side-collapsed .n-new {
+    display: inline-block !important;
     position: static;
+    min-width: 0;
+    height: auto;
     margin-left: auto;
+    padding: 1px 8px;
+    font-size: 12px;
+    line-height: normal;
     box-shadow: none;
   }
   .drawer-extra {

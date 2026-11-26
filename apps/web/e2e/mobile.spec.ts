@@ -12,3 +12,11 @@ test('the sidebar is a drawer behind the hamburger on a phone', async ({ page })
   await side.getByRole('button', { name: /^All threats/ }).click()
   await expect(page.getByRole('button', { name: 'Open navigation' })).toBeVisible()
 })
+
+test('picking a threat scrolls down to its details', async ({ page }) => {
+  await page.goto('./')
+  await page.locator('.trow').first().click()
+  const details = page.getByRole('complementary', { name: 'Threat details' })
+  await expect(details).toBeInViewport({ ratio: 0.3 })
+  expect(await page.evaluate(() => scrollY)).toBeGreaterThan(200)
+})

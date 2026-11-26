@@ -294,6 +294,13 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
   pick: a => {
     e.sel = a
     render()
+    // On a phone the details stack below the list, so bring them into view.
+    if (matchMedia('(max-width: 760px)').matches) {
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
+      document
+        .querySelector('aside[aria-label="Threat details"]')
+        ?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+    }
   },
   'close-detail': () => {
     e.sel = null
