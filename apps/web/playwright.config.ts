@@ -7,9 +7,10 @@ export default defineConfig({
   use: { baseURL: 'http://localhost:4321/watchdog/', colorScheme: 'dark' },
   webServer: {
     command:
-      'node scripts/seed.ts && ../../node_modules/.bin/astro build && node scripts/build-sw.ts && ../../node_modules/.bin/astro preview --port 4321',
+      'node scripts/seed.ts && ../../node_modules/.bin/astro build && node scripts/build-sw.ts && exec ../../node_modules/.bin/astro preview --port 4321 --ignore-lock',
     url: 'http://localhost:4321/watchdog/',
-    reuseExistingServer: !process.env.CI,
+    // Never reuse a running server: a leftover one serves a stale build and tests pass or fail on old code.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 })

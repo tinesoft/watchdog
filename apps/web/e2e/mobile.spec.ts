@@ -20,3 +20,13 @@ test('picking a threat scrolls down to its details', async ({ page }) => {
   await expect(details).toBeInViewport({ ratio: 0.3 })
   expect(await page.evaluate(() => scrollY)).toBeGreaterThan(200)
 })
+
+test('the page never scrolls sideways on a phone', async ({ page }) => {
+  await page.goto('./')
+  await expect(page.locator('.trow').first()).toBeVisible()
+  const overflow = () =>
+    page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  expect(await overflow()).toBe(0)
+  await page.getByRole('button', { name: 'Open navigation' }).click()
+  expect(await overflow()).toBe(0)
+})
