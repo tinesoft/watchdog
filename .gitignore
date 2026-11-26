@@ -12,3 +12,5 @@ playwright-report/
 # Written by a Sweep or the seed script
 apps/web/public/data/
 apps/web/public/feed.xml
+
+.DS_Store
