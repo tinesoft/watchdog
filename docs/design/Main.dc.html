@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>watchdog — triage app</title>
+<script src="./_runtime/react.js"></script>
+<script src="./_runtime/react-dom.js"></script>
+<script src="./_runtime/support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#07090C}
+body,.wd-dark{--bg:#07090C;--bg2:#0B0F13;--surface:#0E1318;--surface2:#121921;--line:#1E2730;--line2:#2A3540;--text:#E6EDF3;--text2:#C3CDD6;--muted:#9AA7B3;--dim:#8B98A5;--lime:#C6FF3D;--lime-soft:#E4FF9E;--crit:#FF5A4E;--crit-t:#FF8A80;--high:#FFA53D;--high-t:#FFC27A;--med:#E6CF45;--med-t:#F2E27A;--blue:#6CB6FF;--sev-crit-bg:#3A0F0C;--sev-high-bg:#3A2408;--sev-med-bg:#2F2B0A;--sev-med-line:#CDB52E;--sel-bg:#141D12;--crit-bg:#1A0B09;--crit-soft:#E6C3BF;--on-accent:#07090C;--grid:rgba(198,255,61,.035);--glass:rgba(7,9,12,.9);--glass2:rgba(7,9,12,.6);--glow:rgba(198,255,61,.7);color-scheme:dark}
+.wd-light{--bg:#F4F6F8;--bg2:#FFFFFF;--surface:#FFFFFF;--surface2:#EEF2F5;--line:#E1E6EB;--line2:#C9D1D9;--text:#0E141A;--text2:#2E3A46;--muted:#4F5D6B;--dim:#5C6875;--lime:#3F6D0A;--lime-soft:#2F5207;--crit:#D92D20;--crit-t:#B42318;--high:#DC6803;--high-t:#A14306;--med:#B98900;--med-t:#7A5A00;--blue:#175CD3;--sev-crit-bg:#FEF3F2;--sev-high-bg:#FFF6ED;--sev-med-bg:#FEFBE8;--sev-med-line:#D4A20B;--sel-bg:#EEF7DC;--crit-bg:#FEF3F2;--crit-soft:#7A271A;--on-accent:#FFFFFF;--grid:rgba(14,20,26,.045);--glass:rgba(244,246,248,.9);--glass2:rgba(244,246,248,.7);--glow:rgba(63,109,10,.45);color-scheme:light}
+a{color:var(--lime)}a:hover{color:var(--lime-soft)}
+*{box-sizing:border-box}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.nav{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;min-height:42px;padding:0 12px;border-radius:10px;color:var(--text2);cursor:pointer;font:500 15px 'Space Grotesk',sans-serif;transition:background .2s,color .2s}
+.nav:hover{background:var(--surface);color:var(--text)}
+.nav-on{background:var(--surface2);color:var(--lime);box-shadow:inset 2px 0 0 var(--lime)}
+.nav:focus-visible,.trow:focus-visible,.seg:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.n{margin-left:auto;font:600 12px 'JetBrains Mono',monospace;color:var(--dim)}
+.n-hot{color:var(--on-accent);background:var(--crit);border-radius:999px;padding:1px 8px}
+.n-new{color:var(--on-accent);background:var(--lime);border-radius:999px;padding:1px 8px}
+.seg{all:unset;box-sizing:border-box;min-height:36px;padding:0 12px;border-radius:9px;color:var(--text2);font:500 13px 'Space Grotesk',sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg:hover{color:var(--text)}
+.seg-on{background:var(--surface2);color:var(--lime)}
+.trow{all:unset;box-sizing:border-box;display:grid;grid-template-columns:40px minmax(0,1fr) 92px 112px;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s;animation:rise .35s both}
+.trow:hover{background:var(--surface2)}
+.trow-sel{background:var(--sel-bg);box-shadow:inset 3px 0 0 var(--lime)}
+.trow-done{opacity:.55}
+.sev{font:700 12px 'JetBrains Mono',monospace;letter-spacing:.03em;padding:4px 8px;border-radius:6px;white-space:nowrap;text-align:center}
+.sev-critical{background:var(--sev-crit-bg);color:var(--crit-t);border:1px solid var(--crit)}
+.sev-high{background:var(--sev-high-bg);color:var(--high-t);border:1px solid var(--high)}
+.sev-medium{background:var(--sev-med-bg);color:var(--med-t);border:1px solid var(--sev-med-line)}
+.ic-critical{color:var(--crit)}.ic-high{color:var(--high)}.ic-medium{color:var(--med)}
+.kev{font:600 11px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--crit-t);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.kev::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--crit);animation:pulse 1.6s infinite}
+.newtag{font:700 10px 'JetBrains Mono',monospace;color:var(--on-accent);background:var(--lime);border-radius:4px;padding:1px 5px}
+.st{font:600 11px 'JetBrains Mono',monospace;border-radius:999px;padding:3px 9px;border:1px solid var(--line2);color:var(--muted);white-space:nowrap}
+.st-investigating{border-color:var(--blue);color:var(--blue)}.st-patched{border-color:var(--lime);color:var(--lime)}
+.btn{all:unset;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:10px;font:600 14px 'Space Grotesk',sans-serif;cursor:pointer;white-space:nowrap;transition:all .2s}
+.btn-p{background:var(--lime);color:var(--on-accent)}.btn-p:hover{box-shadow:0 8px 24px -10px var(--glow)}
+.btn-g{border:1px solid var(--line2);color:var(--text)}.btn-g:hover{border-color:var(--lime);color:var(--lime)}
+.pick{all:unset;box-sizing:border-box;min-height:38px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);color:var(--text2);cursor:pointer;font:500 13px 'Space Grotesk',sans-serif;display:inline-flex;align-items:center;transition:all .2s}
+.pick:hover{border-color:var(--text2)}
+.pick-on{background:var(--lime);border-color:var(--lime);color:var(--on-accent)}
+.preset{all:unset;box-sizing:border-box;min-height:38px;padding:0 12px;border-radius:999px;border:1px dashed var(--line2);color:var(--text2);cursor:pointer;font:500 13px 'Space Grotesk',sans-serif;display:inline-flex;align-items:center}
+.preset-on{border-style:solid;border-color:var(--lime);color:var(--lime)}
+.cmd{display:flex;align-items:stretch;border:1px solid var(--line2);border-radius:8px;overflow:hidden;background:var(--bg)}
+.cmd code{flex:1;font:400 13px 'JetBrains Mono',monospace;padding:10px 12px;white-space:nowrap;overflow-x:auto;color:var(--lime-soft)}
+.cmd span{border-left:1px solid var(--line2);background:var(--surface);color:var(--text2);padding:10px 12px;font:600 12px 'JetBrains Mono',monospace}
+.lg{position:relative;flex:none;display:inline-flex;align-items:center;gap:7px;min-height:34px;padding:0 9px;border-radius:999px;font:500 13px 'Space Grotesk',sans-serif;color:var(--text2);cursor:help;white-space:nowrap;outline:none;transition:background .2s,color .2s}
+.lg:hover,.lg:focus-visible{background:var(--surface2);color:var(--text)}
+.lg:focus-visible{box-shadow:0 0 0 2px var(--lime)}
+.lg-ic{display:inline-flex;color:var(--muted)}
+.lg-tip{position:absolute;left:0;bottom:calc(100% + 8px);width:250px;padding:10px 12px;border-radius:10px;background:var(--text);color:var(--bg);font:400 12.5px/1.45 'Space Grotesk',sans-serif;white-space:normal;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(4px);transition:opacity .15s,transform .15s;z-index:20}
+.lg-r .lg-tip{left:auto;right:0}
+.lg:hover .lg-tip,.lg:focus-visible .lg-tip{opacity:1;visibility:visible;transform:none}
+@container (max-width: 600px){.lg-label,.lg-key{display:none}.lg{padding:0 8px}}
+.sw{flex:none;position:relative;width:42px;height:24px;border-radius:999px;background:var(--line2);transition:background .2s}
+.sw-knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,.35);transition:transform .2s}
+.sw-on{background:var(--lime)}.sw-on .sw-knob{transform:translateX(18px)}
+.alrow{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .15s}
+.alrow:hover{background:var(--surface2)}
+.alrow:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+.bell-on{color:var(--lime) !important;background:var(--surface2)}
+.pop-in{animation:popin .18s both}
+@keyframes popin{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.srcgroup{display:flex;flex-direction:column;gap:12px;width:100%;padding:18px 20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);transition:border-color .2s,box-shadow .2s}
+.srcgroup:hover{border-color:var(--line2);box-shadow:0 14px 34px -24px rgba(0,0,0,.6)}
+.srcgroup-ic{display:inline-flex;flex:none;width:44px;height:44px;border-radius:12px;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--line)}
+.srcitem{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg2);text-decoration:none;transition:background .15s,border-color .15s}
+.srcitem:hover{background:var(--surface2);border-color:var(--line2)}
+.srcitem:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+.acopt{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:8px;cursor:pointer}
+.acopt:hover,.acopt-on{background:var(--surface2)}
+.acopt-on{box-shadow:inset 2px 0 0 var(--lime)}
+.side{flex:0 0 248px;max-width:248px;transition:flex-basis .25s ease,max-width .25s ease}
+.side-collapsed{flex:0 0 72px;max-width:72px;padding-left:12px !important;padding-right:12px !important}
+.side-collapsed .nav-text,.side-collapsed .n,.side-collapsed .side-card,.side-collapsed .sec-label,.side-collapsed .nav-dot{display:none !important}
+.side-collapsed .nav{position:relative}
+.side-collapsed .n-hot,.side-collapsed .n-new{display:inline-flex !important;align-items:center;justify-content:center;position:absolute;top:1px;right:1px;min-width:18px;height:18px;margin:0;padding:0 5px;font-size:10.5px;line-height:1;box-shadow:0 0 0 2px var(--bg)}
+.side-collapsed .side-top{justify-content:center !important}
+.side-collapsed .nav{justify-content:center;padding:0}
+.sec-div{display:none;height:1px;background:var(--line);margin:10px 6px}
+.side-collapsed .sec-div{display:block}
+.nav-ic{position:relative;display:inline-flex;flex:none}
+.nav-dot{display:none;position:absolute;top:-3px;right:-5px;width:9px;height:9px;border-radius:50%;border:2px solid var(--bg)}
+.side-toggle{color:var(--dim)}
+.side-mini{all:unset;box-sizing:border-box;display:none;position:relative;flex-direction:column;align-items:center;gap:4px;margin-top:16px;padding:10px 0 8px;border-radius:12px;border:1px solid currentColor;background:var(--surface);cursor:pointer;text-align:center}
+.side-mini:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.side-collapsed .side-mini{display:flex}
+.bark-count{position:absolute;top:-8px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:var(--crit);color:var(--on-accent);font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg)}
+.bark-word{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.bark-wave{opacity:0}
+.barking .bark-head{transform-box:fill-box;transform-origin:30% 80%;animation:barkhead 1.6s ease-in-out infinite}
+.barking .bark-jaw{transform-box:fill-box;transform-origin:0 50%;animation:barkjaw 1.6s ease-in-out infinite}
+.barking .w1{animation:barkwave 1.6s ease-out infinite}
+.barking .w2{animation:barkwave 1.6s ease-out .18s infinite}
+.barking .bark-word{animation:barkword 1.6s ease-in-out infinite}
+.calm .bark-head{animation:lookaround 5s ease-in-out infinite;transform-box:fill-box;transform-origin:35% 85%}
+.calm .bark-eye{animation:lookeye 5s ease-in-out infinite}
+@keyframes barkhead{0%,55%,100%{transform:none}10%,30%{transform:rotate(-6deg) translateY(-1px)}20%,40%{transform:rotate(2deg)}}
+@keyframes barkjaw{0%,55%,100%{transform:none}10%,30%{transform:rotate(18deg)}}
+@keyframes barkwave{0%{opacity:0;transform:translateX(-2px)}12%{opacity:1}45%{opacity:0;transform:translateX(3px)}100%{opacity:0}}
+@keyframes barkword{0%,55%,100%{transform:none}12%,32%{transform:scale(1.15)}}
+@keyframes lookaround{0%,12%,100%{transform:rotate(0)}22%,38%{transform:rotate(-12deg) translateX(-1px)}48%,52%{transform:rotate(0)}62%,78%{transform:rotate(9deg) translateX(1px)}88%{transform:rotate(0)}}
+@keyframes lookeye{0%,12%,48%,52%,88%,100%{transform:none}22%,38%{transform:translateX(-1.2px)}62%,78%{transform:translateX(1.2px)}}
+.repcard{display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);transition:border-color .2s,transform .2s;animation:rise .35s both}
+.repcard:hover{border-color:var(--line2);transform:translateY(-2px)}
+.replab{flex:none;width:38px;height:38px;border-radius:10px;border:1.5px solid;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;background:var(--bg)}
+.cvechip{all:unset;box-sizing:border-box;font:600 12px 'JetBrains Mono',monospace;padding:4px 8px;border-radius:6px;border:1px solid var(--line2);color:var(--text2);cursor:default}
+.cvechip-feed{border-color:var(--lime);color:var(--lime);cursor:pointer}
+.cvechip-feed:hover{background:var(--sel-bg)}
+.cvechip:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+.legend-pin{position:sticky;bottom:12px;z-index:12;box-shadow:0 -10px 30px -18px rgba(0,0,0,.55),0 10px 30px -18px rgba(0,0,0,.55)}
+.only-mobile,.drawer-extra,.nav-backdrop{display:none}
+@media (max-width: 760px){
+.only-mobile{display:inline-flex}
+.hide-mobile{display:none !important}
+.topbar{position:sticky !important;top:0;flex-wrap:nowrap !important;gap:8px !important;padding:8px 10px !important;min-height:60px !important}
+.brand{flex:none !important}
+.brand-text{display:none}
+.topsearch{flex:1 1 auto !important;max-width:none !important;margin:0 auto}
+.topactions{margin-left:0 !important;gap:4px !important}
+.side,.side-collapsed{position:fixed;top:60px;left:0;bottom:0;z-index:40;flex:none !important;width:280px;max-width:86vw !important;overflow-y:auto;background:var(--bg) !important;border-right:1px solid var(--line2);padding:12px !important;transform:translateX(-105%);transition:transform .25s ease;box-shadow:20px 0 60px -20px rgba(0,0,0,.6)}
+.side-open{transform:none}
+.side-top{display:none !important}
+.side-collapsed .nav-text,.side-collapsed .n{display:inline !important}
+.side-collapsed .sec-label{display:block !important}
+.side-collapsed .side-card{display:flex !important}
+.side-collapsed .sec-div,.side-collapsed .side-mini{display:none !important}
+.side-collapsed .nav{justify-content:flex-start;padding:0 12px}
+.side-collapsed .n-hot,.side-collapsed .n-new{position:static;margin-left:auto;box-shadow:none}
+.drawer-extra{display:flex}
+.nav-backdrop{all:unset;display:block;position:fixed;inset:60px 0 0 0;z-index:35;background:rgba(4,6,8,.5)}
+.mainpane{padding:16px 14px 40px !important}
+}
+.mascot-alarm{animation:shake .5s 3}
+.eye{animation:blink 1s steps(1) infinite}
+.panel-in{animation:slidein .3s both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes slidein{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,90,78,.7)}70%{box-shadow:0 0 0 8px rgba(255,90,78,0)}100%{box-shadow:0 0 0 0 rgba(255,90,78,0)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes shake{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
+</style>
+</helmet>
+<div class="{{themeCls}}" style="position: relative; min-height: 100vh; background-color: var(--bg); background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 40px 40px; color: var(--text); font-family: 'Space Grotesk', system-ui, sans-serif; font-size: 15px">
+
+<header class="topbar" style="position: relative; z-index: 30; min-height: 64px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--glass)">
+<button type="button" class="btn only-mobile" onClick="{{toggleMobileNav}}" aria-label="{{mobileNavLabel}}" aria-expanded="{{mobileNavOpen}}" aria-controls="wd-side" style="width: 44px; padding: 0; color: var(--text2)">
+<sc-if value="{{mobileNavClosed}}" hint-placeholder-val="{{ true }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></sc-if>
+<sc-if value="{{mobileNavOpen}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></sc-if>
+</button>
+<a href="#" class="brand" style="flex: 0 0 216px; display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text)">
+<svg class="{{mascotCls}}" width="36" height="36" viewBox="0 0 32 32" aria-hidden="true" style="color: {{mascotColor}}"><rect x="1" y="1" width="30" height="30" rx="8" style="fill: var(--surface)" stroke="currentColor" stroke-width="1.5"></rect><path d="M7 24 L9 14 L10 6 L14 12 L17 7 L19 13 L26 16 Q27.5 17 26.5 18.5 L21 20 L15 23 Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path><circle class="eye" cx="17.5" cy="15" r="1.7" fill="currentColor"></circle></svg>
+<span class="mono brand-text" style="font-size: 19px; font-weight: 700; letter-spacing: -0.02em">watchdog</span>
+</a>
+<div class="topsearch" style="position: relative; flex: 1 1 280px; max-width: 560px">
+<label for="wd-q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search CVE, package or product</label>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="stroke: var(--dim); position: absolute; left: 13px; top: 13px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<input id="wd-q" type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search CVE, package, product…  ( / )" style="min-height: 44px; width: 100%; padding: 0 14px 0 40px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface); color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none">
+</div>
+<div class="topactions" style="display: flex; align-items: center; gap: 8px; margin-left: auto">
+<span class="mono hide-mobile" style="display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 10px var(--lime)"></span><span aria-live="off">{{sweepText}}</span></span>
+<button type="button" class="btn hide-mobile" onClick="{{toggleTheme}}" aria-label="{{themeLabel}}" title="{{themeLabel}}" style="width: 44px; padding: 0; color: var(--text2)">
+<sc-if value="{{isDark}}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg></sc-if>
+<sc-if value="{{isLight}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></sc-if>
+</button>
+<span style="position: relative; display: inline-flex">
+<button type="button" class="btn {{bellCls}}" onClick="{{toggleAlerts}}" aria-label="Alerts" aria-expanded="{{alertsOpen}}" title="Alerts" style="width: 44px; padding: 0; color: var(--text2)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg></button>
+<sc-if value="{{alertCount}}" hint-placeholder-val="{{ true }}"><span class="mono" aria-hidden="true" style="position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--crit); color: var(--on-accent); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; pointer-events: none">{{alertCount}}</span></sc-if>
+<sc-if value="{{alertsOpen}}" hint-placeholder-val="{{ false }}">
+<div role="dialog" aria-label="Alerts" class="pop-in" style="position: absolute; top: calc(100% + 10px); right: 0; width: 380px; max-width: calc(100vw - 24px); background: var(--bg2); border: 1px solid var(--line2); border-radius: 14px; box-shadow: 0 24px 60px -20px rgba(0,0,0,.55); display: flex; flex-direction: column; overflow: hidden">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--line)">
+<b style="font-size: 16px">Alerts</b>
+<button type="button" class="btn" onClick="{{toggleAlerts}}" aria-label="Close alerts" style="width: 36px; min-height: 36px; padding: 0; color: var(--text2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+</div>
+<div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px solid var(--line)">
+<button type="button" role="switch" aria-checked="{{alertsOn}}" onClick="{{toggleAlertsOn}}" style="all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 12px; cursor: pointer; min-height: 44px">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600; color: var(--text)">Browser alerts</span><span style="font-size: 12.5px; line-height: 1.45; color: var(--muted)">{{alertsHint}}</span></span>
+<span class="sw {{swCls}}"><span class="sw-knob"></span></span>
+</button>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 12px; color: var(--dim)">Alert me about</span>
+<div style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg)">
+<sc-for list="{{alertLevels}}" as="lv" hint-placeholder-count="3"><button type="button" class="seg {{lv.cls}}" onClick="{{lv.pick}}">{{lv.label}}</button></sc-for>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; max-height: 300px; overflow-y: auto">
+<span class="mono" style="padding: 12px 16px 6px; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">New in your stack</span>
+<sc-if value="{{alertEmpty}}" hint-placeholder-val="{{ false }}"><span style="padding: 10px 16px 18px; font-size: 13px; color: var(--muted)">All quiet. Nothing new matches your stack and alert level.</span></sc-if>
+<sc-for list="{{alertItems}}" as="al" hint-placeholder-count="3">
+<button type="button" class="alrow" onClick="{{al.open}}">
+<span class="sev sev-{{al.severity}}" style="flex: none">{{al.sevText}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span class="mono" style="font-size: 12.5px; font-weight: 600; color: var(--text)">{{al.id}}</span><span style="font-size: 13px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{al.title}}</span></span>
+<sc-if value="{{al.exploited}}" hint-placeholder-val="{{ false }}"><span class="kev" style="flex: none">exploited</span></sc-if>
+</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line)">
+<button type="button" class="btn btn-g" onClick="{{clearInbox}}" style="min-height: 38px; font-size: 13px">Mark all as read</button>
+<a href="#" class="mono" style="font-size: 12.5px">RSS feed ↗</a>
+</div>
+<span style="padding: 0 16px 14px; font-size: 12px; line-height: 1.45; color: var(--dim)">Alerts appear when watchdog is open. For alerts while it’s closed, subscribe to the RSS feed.</span>
+</div>
+</sc-if>
+</span>
+<button type="button" class="btn hide-mobile {{gearCls}}" onClick="{{openSettings}}" aria-label="Settings" aria-haspopup="dialog" title="Settings" style="width: 44px; padding: 0; color: var(--text2)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+</div>
+</header>
+
+<div class="layout" style="display: flex; flex-wrap: wrap; align-items: stretch; min-height: calc(100vh - 64px)">
+<sc-if value="{{mobileNavOpen}}" hint-placeholder-val="{{ false }}"><button type="button" class="nav-backdrop" onClick="{{toggleMobileNav}}" aria-label="Close navigation"></button></sc-if>
+<nav id="wd-side" aria-label="Views" class="side {{sideCls}} {{mobileNavCls}}" style="border-right: 1px solid var(--line); padding: 12px 12px 16px; display: flex; flex-direction: column; gap: 2px; background: var(--glass2)">
+<div style="display: flex; justify-content: flex-end; padding-bottom: 6px" class="side-top">
+<button type="button" class="nav side-toggle" onClick="{{toggleSide}}" aria-label="{{sideToggleLabel}}" aria-expanded="{{sideExpanded}}" title="{{sideToggleLabel}}" style="width: 40px; min-height: 40px; padding: 0; justify-content: center">
+<sc-if value="{{sideExpanded}}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M16 10l-2 2 2 2"></path></svg></sc-if>
+<sc-if value="{{sideCollapsed}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M14 10l2 2-2 2"></path></svg></sc-if>
+</button>
+</div>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="8">
+<sc-if value="{{n.label2}}" hint-placeholder-val="{{ false }}"><div class="mono sec-label" style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); padding: 14px 12px 6px">{{n.label2}}</div><div class="sec-div" aria-hidden="true"></div></sc-if>
+<button type="button" class="nav {{n.cls}}" onClick="{{n.go}}" title="{{n.label}}" aria-label="{{n.aria}}"><span class="nav-ic"><sc-if value="{{n.ic_inbox}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"></path><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg></sc-if><sc-if value="{{n.ic_all}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg></sc-if><sc-if value="{{n.ic_stackfeed}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l9 5-9 5-9-5 9-5z"></path><path d="M3 12l9 5 9-5M3 17l9 5 9-5"></path></svg></sc-if><sc-if value="{{n.ic_triage}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></sc-if><sc-if value="{{n.ic_scan}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="6"></circle><path d="M14.5 14.5L21 21"></path></svg></sc-if><sc-if value="{{n.ic_stack}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg></sc-if><sc-if value="{{n.ic_reports}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg></sc-if><sc-if value="{{n.ic_sources}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg></sc-if><span class="nav-dot {{n.dotCls}}"></span></span><span class="nav-text">{{n.label}}</span><span class="n {{n.ncls}}">{{n.count}}</span></button>
+</sc-for>
+<button type="button" class="side-mini {{barkCls}}" onClick="{{barkGo}}" title="{{barkTitle}}" aria-label="{{barkTitle}}" style="color: {{cardColor}}">
+<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true" style="overflow: visible">
+<g class="bark-head"><path d="M4 24 L6 14 L7 6 L11 12 L14 7 L16 13 L23 16 Q24.5 17 23.5 18.5 L18 20 L12 23 Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path><circle class="bark-eye" cx="14.5" cy="15" r="1.6" fill="currentColor"></circle><path class="bark-jaw" d="M18 20 L23 21.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path></g>
+<path class="bark-wave w1" d="M26 14 Q28 17 26 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+<path class="bark-wave w2" d="M28.5 11.5 Q31.5 17 28.5 22.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+</svg>
+<sc-if value="{{barkCount}}" hint-placeholder-val="{{ true }}"><span class="mono bark-count">{{barkCount}}</span></sc-if>
+<sc-if value="{{barkWord}}" hint-placeholder-val="{{ true }}"><span class="mono bark-word">{{barkWord}}</span></sc-if>
+</button>
+<div class="side-card" style="margin-top: 16px; border: 1px solid {{cardBorder}}; border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--text2)">
+<b class="mono" style="font-size: 13px; color: {{cardColor}}">{{cardTitle}}</b>
+<span>{{cardText}}</span>
+</div>
+<div class="drawer-extra" style="flex-direction: column; gap: 2px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line)">
+<button type="button" class="nav" onClick="{{toggleTheme}}"><span class="nav-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg></span><span>{{themeLabel}}</span></button>
+<button type="button" class="nav" onClick="{{openSettingsMobile}}"><span class="nav-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3"></path></svg></span><span>Settings</span></button>
+<span class="mono" style="padding: 10px 12px 0; font-size: 11.5px; color: var(--dim)">{{sweepText}}</span>
+</div>
+</nav>
+
+<main class="mainpane" style="flex: 999 1 520px; min-width: 0; padding: 24px 28px 48px; display: flex; flex-direction: column; gap: 18px">
+<sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em; line-height: 1.1">{{viewTitle}}</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">{{viewSub}}</p></div>
+<div style="display: flex; gap: 8px"><sc-if value="{{isInbox}}" hint-placeholder-val="{{ true }}"><button type="button" class="btn btn-g" onClick="{{clearInbox}}">Mark all as read</button></sc-if><button type="button" class="btn btn-g">Export CSV</button></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<div style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2)">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="6"><button type="button" class="seg {{c.cls}}" onClick="{{c.pick}}">{{c.label}}<span class="mono" style="font-size: 11px; color: var(--dim)">{{c.count}}</span></button></sc-for>
+</div>
+<button type="button" class="pick {{expCls}}" onClick="{{toggleExp}}" style="gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--crit)"></span>Exploited only</button>
+<span class="mono" style="margin-left: auto; font-size: 12px; color: var(--dim)">Riskiest first</span>
+</div>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px dashed var(--line2); border-radius: 14px; padding: 40px 20px; text-align: center; color: var(--muted)"><b style="color: var(--text)">Inbox zero.</b> Nothing new since you last cleared it. The dog keeps patrolling.</div>
+</sc-if>
+<div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface)">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+<button type="button" class="trow {{r.cls}}" onClick="{{r.pick}}" aria-label="{{r.id}}: {{r.title}}">
+<span class="ic-{{r.severity}}" style="display: inline-flex; width: 36px; height: 36px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); align-items: center; justify-content: center">
+<sc-if value="{{r.isBug}}" hint-placeholder-val="{{ true }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="14" rx="5" ry="6.5"></ellipse><circle cx="12" cy="6" r="2.5"></circle><path d="M12 8v12M7 11H3M7 15H3M7 19l-3 2M17 11h4M17 15h4M17 19l3 2"></path></svg></sc-if>
+<sc-if value="{{r.isWorm}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 16c2-4 4-4 6 0s4 4 6 0 3-5 6-6"></path><circle cx="20.5" cy="9.5" r="1.8"></circle></svg></sc-if>
+<sc-if value="{{r.isVirus}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 7V3M12 21v-4M7 12H3M21 12h-4M8.5 8.5L5.6 5.6M18.4 18.4l-2.9-2.9M15.5 8.5l2.9-2.9M5.6 18.4l2.9-2.9"></path></svg></sc-if>
+<sc-if value="{{r.isTrojan}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h10v5H4zM13 10l3-6h4v3h-3l-2 3M6 15v4M12 15v4M3 19h12"></path><circle cx="5" cy="21" r="1"></circle><circle cx="13" cy="21" r="1"></circle></svg></sc-if>
+<sc-if value="{{r.isHacker}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21c0-7 3-12 8-18 5 6 8 11 8 18"></path><path d="M8 14c0-3 2-5 4-5s4 2 4 5-2 4-4 4-4-1-4-4z"></path></svg></sc-if>
+</span>
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span class="mono" style="font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center">{{r.id}}<sc-if value="{{r.isNew}}" hint-placeholder-val="{{ false }}"><span class="newtag">NEW</span></sc-if></span>
+<span style="font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.title}}</span>
+</span>
+<span class="sev sev-{{r.severity}}">{{r.sevText}}</span>
+<span style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+<sc-if value="{{r.exploited}}" hint-placeholder-val="{{ false }}"><span class="kev">exploited</span></sc-if>
+<sc-if value="{{r.mine}}" hint-placeholder-val="{{ false }}"><span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--lime)">◆ my stack</span></sc-if>
+<sc-if value="{{r.status}}" hint-placeholder-val="{{ false }}"><span class="st st-{{r.status}}">{{r.statusLabel}}</span></sc-if>
+</span>
+</button>
+</sc-for>
+</div>
+<section aria-label="What the icons mean" class="legend-pin" style="display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); container-type: inline-size">
+<span class="mono lg-key" style="flex: none; font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin-right: 2px">Key</span>
+<span class="lg" tabindex="0" aria-describedby="lg-virus"><span class="lg-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 7V3M12 21v-4M7 12H3M21 12h-4M8.5 8.5L5.6 5.6M18.4 18.4l-2.9-2.9M15.5 8.5l2.9-2.9M5.6 18.4l2.9-2.9"></path></svg></span><span class="lg-label">Virus</span><span class="lg-tip" role="tooltip" id="lg-virus">Runs code where it shouldn’t: remote code execution, command injection, unsafe deserialization, memory corruption.</span></span>
+<span class="lg" tabindex="0" aria-describedby="lg-worm"><span class="lg-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 16c2-4 4-4 6 0s4 4 6 0 3-5 6-6"></path><circle cx="20.5" cy="9.5" r="1.8"></circle></svg></span><span class="lg-label">Worm</span><span class="lg-tip" role="tooltip" id="lg-worm">Spreads or floods on its own: wormable flaws and denial-of-service attacks.</span></span>
+<span class="lg" tabindex="0" aria-describedby="lg-trojan"><span class="lg-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h10v5H4zM13 10l3-6h4v3h-3l-2 3M6 15v4M12 15v4M3 19h12"></path><circle cx="5" cy="21" r="1"></circle><circle cx="13" cy="21" r="1"></circle></svg></span><span class="lg-label">Trojan</span><span class="lg-tip" role="tooltip" id="lg-trojan">Trojan horse. Arrives in disguise: backdoors, malicious packages, compromised releases.</span></span>
+<span class="lg" tabindex="0" aria-describedby="lg-hacker"><span class="lg-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21c0-7 3-12 8-18 5 6 8 11 8 18"></path><path d="M8 14c0-3 2-5 4-5s4 2 4 5-2 4-4 4-4-1-4-4z"></path></svg></span><span class="lg-label">Hacker</span><span class="lg-tip" role="tooltip" id="lg-hacker">Gets past the door checks: auth bypass, privilege escalation, prompt injection, data leaks, SQLi, XSS, SSRF.</span></span>
+<span class="lg" tabindex="0" aria-describedby="lg-bug"><span class="lg-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="14" rx="5" ry="6.5"></ellipse><circle cx="12" cy="6" r="2.5"></circle><path d="M12 8v12M7 11H3M7 15H3M7 19l-3 2M17 11h4M17 15h4M17 19l3 2"></path></svg></span><span class="lg-label">Bug</span><span class="lg-tip" role="tooltip" id="lg-bug">Any other flaw that doesn’t fit the types above.</span></span>
+<span aria-hidden="true" style="flex: none; width: 1px; height: 24px; background: var(--line2)"></span>
+<span class="lg lg-r" tabindex="0" aria-describedby="lg-critical"><span class="ic-critical" style="flex: none; width: 10px; height: 10px; border-radius: 3px; background: currentColor"></span><span class="lg-label">Critical</span><span class="lg-tip" role="tooltip" id="lg-critical">CVSS 9.0–10. Patch now.</span></span>
+<span class="lg lg-r" tabindex="0" aria-describedby="lg-high"><span class="ic-high" style="flex: none; width: 10px; height: 10px; border-radius: 3px; background: currentColor"></span><span class="lg-label">High</span><span class="lg-tip" role="tooltip" id="lg-high">CVSS 7.0–8.9. Patch soon.</span></span>
+<span class="lg lg-r" tabindex="0" aria-describedby="lg-medium"><span class="ic-medium" style="flex: none; width: 10px; height: 10px; border-radius: 3px; background: currentColor"></span><span class="lg-label">Medium</span><span class="lg-tip" role="tooltip" id="lg-medium">CVSS 4.0–6.9. Patch in your normal cycle.</span></span>
+</section>
+</sc-if>
+
+<sc-if value="{{isScan}}" hint-placeholder-val="{{ false }}">
+<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Scan dependencies</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Drop a manifest or lockfile. watchdog checks every dependency against OSV and today’s feed, then tells you what to upgrade.</p></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; align-items: start">
+<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; padding: 26px 16px; border: 1.5px dashed var(--line2); border-radius: 12px; color: var(--muted)">
+<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"></path></svg>
+<b style="color: var(--text)">package.json</b>
+<span class="mono" style="font-size: 11px; line-height: 1.6">package-lock.json · requirements.txt · go.mod · Cargo.lock · Gemfile.lock · composer.lock · pom.xml</span>
+</div>
+<pre class="mono" style="margin: 0; background: var(--bg); border: 1px solid var(--line2); border-radius: 10px; padding: 12px; font-size: 13px; color: var(--text2); white-space: pre-wrap">{{scanInput}}</pre>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><span style="font-size: 14px; color: var(--text2)">☑ Check with OSV.dev</span><button type="button" class="btn btn-p" style="margin-left: auto">Sniff it</button></div>
+<span style="font-size: 12px; color: var(--dim)">Files are read in your browser. Only package names and versions go to api.osv.dev.</span>
+</div>
+<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div class="mono" style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 14px; font-weight: 600"><span>3 deps scanned</span><span class="ic-high">3 vulnerable</span><span class="ic-critical">2 critical</span></div>
+<sc-for list="{{scanResults}}" as="s" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line)">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center"><span class="mono" style="font-weight: 600; font-size: 14px">{{s.name}} <span style="color: var(--dim)">{{s.version}}</span></span><span class="mono" style="font-size: 12px">npm → <span style="color: var(--lime)">{{s.target}}</span></span></div>
+<div style="display: flex; gap: 6px"><span class="sev sev-{{s.severity}}">{{s.id}}</span></div>
+<div class="cmd"><code>{{s.cmd}}</code><span>Copy</span></div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isReports}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Field reports</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Research from antivirus vendors and security labs, linked to the threats it covers.</p></div>
+<a href="#" class="mono" style="font-size: 13px">Lab feeds in Sources →</a>
+</div>
+<div style="border: 1px solid var(--lime); background: var(--sel-bg); border-radius: 12px; padding: 12px 14px; font-size: 14px; color: var(--text2)">These are <b style="color: var(--text)">sample reports</b>. The daily sweep fills this page with the last three weeks of posts from each lab’s feed.</div>
+<div style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg2); align-self: flex-start">
+<sc-for list="{{labChips}}" as="lc" hint-placeholder-count="6"><button type="button" class="seg {{lc.cls}}" onClick="{{lc.pick}}">{{lc.label}}<span class="mono" style="font-size: 11px; color: var(--dim)">{{lc.count}}</span></button></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px">
+<sc-for list="{{reportCards}}" as="rp" hint-placeholder-count="6">
+<article class="repcard">
+<div style="display: flex; align-items: center; gap: 10px">
+<span class="mono replab" style="color: {{rp.color}}; border-color: {{rp.color}}">{{rp.initials}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 13px; font-weight: 600; color: var(--text2)">{{rp.lab}}</span><span class="mono" style="font-size: 12px; color: var(--dim)">{{rp.date}}</span></span>
+</div>
+<h2 style="margin: 0; font-size: 17px; line-height: 1.35">{{rp.title}}</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.55; color: var(--muted)">{{rp.summary}}</p>
+<sc-if value="{{rp.hasCves}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span style="font-size: 12px; color: var(--dim)">Covers</span>
+<sc-for list="{{rp.cves}}" as="cv" hint-placeholder-count="2"><button type="button" class="cvechip {{cv.cls}}" onClick="{{cv.open}}" title="{{cv.hint}}">{{cv.id}}</button></sc-for>
+</div>
+</sc-if>
+<a href="{{rp.url}}" target="_blank" rel="noopener" class="mono" style="margin-top: auto; font-size: 13px; align-self: flex-start; padding: 8px 0">Read on {{rp.site}} ↗</a>
+</article>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isSources}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px">
+<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">Sources</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">{{sourceTotal}} trusted sources the dog patrols every morning at 06:00, in {{sourceGroupCount}} groups.</p></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 16px">
+<sc-for list="{{sourceGroups}}" as="g" hint-placeholder-count="5">
+<section class="srcgroup" aria-label="{{g.name}}">
+<div style="display: flex; align-items: center; gap: 12px">
+<span class="srcgroup-ic" style="color: {{g.color}}"><sc-if value="{{g.is_gov}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M4 10h16M12 3l8 5H4l8-5z"></path><path d="M6 10v8M10 10v8M14 10v8M18 10v8"></path></svg></sc-if><sc-if value="{{g.is_vendor}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"></path><path d="M3 8l9 5 9-5M12 13v8"></path></svg></sc-if><sc-if value="{{g.is_db}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"></ellipse><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"></path><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"></path></svg></sc-if><sc-if value="{{g.is_secvendor}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg></sc-if><sc-if value="{{g.is_news}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h13v16H6a2 2 0 0 1-2-2V4z"></path><path d="M17 8h3v10a2 2 0 0 1-2 2"></path><path d="M8 8h5M8 12h5M8 16h3"></path></svg></sc-if></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="display: flex; align-items: baseline; gap: 8px"><h2 style="margin: 0; font-size: 17px">{{g.name}}</h2><span class="mono" style="font-size: 12px; color: var(--dim)">{{g.count}}</span></span><span style="font-size: 12.5px; line-height: 1.45; color: var(--muted)">{{g.desc}}</span></span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 2px">
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="4">
+<a class="srcitem" href="{{it.url}}" target="_blank" rel="noopener">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 14px; font-weight: 600; color: var(--text)">{{it.name}}</span><span class="mono" style="font-size: 12px; color: var(--lime); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{it.url}}</span></span>
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; color: var(--dim)"><path d="M7 17L17 7M8 7h9v9"></path></svg>
+</a>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isStackEdit}}" hint-placeholder-val="{{ false }}">
+<div><h1 style="margin: 0; font-size: 30px; letter-spacing: -0.03em">My stack</h1><p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Tell the dog what you run. Matching threats land in your inbox and raise the alarm.</p></div>
+<div style="border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 18px">Quick add</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{presets}}" as="p" hint-placeholder-count="12"><button type="button" class="preset {{p.cls}}" onClick="{{p.toggle}}">{{p.mark}} {{p.label}}</button></sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px">
+<label for="wd-stack-add" style="font-size: 14px; font-weight: 600; color: var(--text)">Not in the list? Add anything you run</label>
+<div style="position: relative; display: flex; gap: 8px; align-items: flex-start">
+<div style="position: relative; flex: 1; min-width: 0">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="stroke: var(--dim); position: absolute; left: 13px; top: 13px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<input id="wd-stack-add" type="text" role="combobox" aria-autocomplete="list" aria-expanded="{{acOpen}}" aria-controls="wd-ac-list" autocomplete="off" value="{{acQuery}}" onChange="{{onAcInput}}" onKeyDown="{{onAcKey}}" placeholder="Package, product, OS or tool, e.g. django, kafka, vmware esxi" style="min-height: 44px; width: 100%; padding: 0 14px 0 40px; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none">
+<sc-if value="{{acOpen}}" hint-placeholder-val="{{ false }}">
+<div id="wd-ac-list" role="listbox" aria-label="Suggestions" class="pop-in" style="position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 25; background: var(--bg2); border: 1px solid var(--line2); border-radius: 12px; box-shadow: 0 20px 50px -20px rgba(0,0,0,.55); padding: 6px; display: flex; flex-direction: column">
+<sc-for list="{{acItems}}" as="ac" hint-placeholder-count="4">
+<button type="button" role="option" aria-selected="{{ac.active}}" class="acopt {{ac.cls}}" onClick="{{ac.pick}}">
+<span style="flex: 1; min-width: 0; font: 500 14px 'JetBrains Mono', monospace; color: var(--text)">{{ac.label}}</span>
+<span class="mono" style="flex: none; font-size: 11px; color: var(--dim); border: 1px solid var(--line2); border-radius: 6px; padding: 2px 7px">{{ac.kind}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<button type="button" class="btn btn-p" onClick="{{acAdd}}">Add</button>
+</div>
+<span style="font-size: 12px; color: var(--dim)">Press Enter or Add. ↑ and ↓ pick a suggestion. Anything you type is matched as a whole word in threat titles, products and packages.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px">
+<span style="font-size: 14px; font-weight: 600; color: var(--text)">In your stack <span class="mono" style="font-weight: 400; color: var(--dim)">{{stackCount}}</span></span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{stackTags}}" as="t" hint-placeholder-count="3">
+<span style="display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 4px 0 12px; border-radius: 999px; border: 1px solid var(--lime); color: var(--text); font: 500 13px 'JetBrains Mono', monospace">{{t.name}}<button type="button" onClick="{{t.remove}}" aria-label="Remove {{t.name}}" style="all: unset; box-sizing: border-box; width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: var(--dim); cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></span>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+</main>
+
+<sc-if value="{{showDetail}}" hint-placeholder-val="{{ true }}">
+<aside aria-label="Threat details" class="panel-in" style="flex: 1 1 380px; max-width: 460px; min-width: 0; border-left: 1px solid var(--line); background: var(--bg2); padding: 20px 22px 40px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span class="mono" style="font-size: 12px; color: var(--lime); letter-spacing: .12em; text-transform: uppercase">under the magnifier</span><button type="button" class="btn" onClick="{{closeSel}}" aria-label="Close details" style="width: 44px; padding: 0; color: var(--text2)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="mono" style="font-size: 21px; font-weight: 700">{{sel.id}}</span><h2 style="margin: 0; font-size: 19px; line-height: 1.3">{{sel.title}}</h2></div>
+<div style="display: flex; flex-direction: column; gap: 8px" class="ic-{{sel.severity}}">
+<div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--muted)"><span>CVSS base score · {{sel.published}}</span><b class="mono ic-{{sel.severity}}" style="font-size: 26px">{{sel.cvssText}}</b></div>
+<div style="height: 8px; border-radius: 4px; background: var(--line); overflow: hidden"><div style="height: 100%; width: {{sel.pct}}%; background: currentColor; border-radius: 4px"></div></div>
+</div>
+<sc-if value="{{sel.exploited}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px solid var(--crit); background: var(--crit-bg); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 6px"><span class="kev">exploited in the wild</span><span style="font-size: 14px; color: var(--crit-soft)">Listed in CISA’s KEV catalog. Required action: {{sel.kevAction}}</span></div>
+</sc-if>
+<p style="margin: 0; color: var(--text2); line-height: 1.6">{{sel.summary}}</p>
+<div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 10px">
+<span class="mono" style="font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">How to fix</span>
+<dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; font-size: 13px">
+<dt style="color: var(--dim)">Package</dt><dd class="mono" style="margin: 0">{{sel.product}}</dd>
+<dt style="color: var(--dim)">Affected</dt><dd class="mono" style="margin: 0; color: var(--high-t)">{{sel.affected}}</dd>
+<dt style="color: var(--dim)">Fixed in</dt><dd class="mono" style="margin: 0; color: var(--lime)">{{sel.fixed}}</dd>
+</dl>
+<sc-if value="{{sel.cmd}}" hint-placeholder-val="{{ true }}"><div class="cmd"><code>{{sel.cmd}}</code><span>Copy</span></div></sc-if>
+</div>
+<div style="border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 10px">
+<span class="mono" style="font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">Your triage</span>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{statusPicks}}" as="s" hint-placeholder-count="4"><button type="button" class="pick {{s.cls}}" onClick="{{s.set}}">{{s.label}}</button></sc-for></div>
+<label for="wd-note" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Notes</label>
+<textarea id="wd-note" rows="2" placeholder="Notes: where it runs, owner, ticket…" style="width: 100%; border-radius: 10px; border: 1px solid var(--line2); background: var(--bg); color: var(--text); padding: 10px 12px; font: 400 13px 'JetBrains Mono', monospace; resize: vertical"></textarea>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button type="button" class="btn btn-p">Open GitHub issue</button>
+<button type="button" class="btn btn-g">Copy as Markdown</button>
+<button type="button" class="btn btn-g">Copy link</button>
+<button type="button" class="btn btn-g">Add to my stack</button>
+</div>
+</aside>
+</sc-if>
+</div>
+<sc-if value="{{settingsOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; z-index: 50; background: rgba(4,6,8,.6); display: flex; align-items: flex-start; justify-content: center; padding: 72px 16px 24px">
+<div role="dialog" aria-modal="true" aria-labelledby="wd-set-title" class="pop-in" style="width: 520px; max-width: 100%; background: var(--bg2); border: 1px solid var(--line2); border-radius: 16px; box-shadow: 0 30px 80px -20px rgba(0,0,0,.6); display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 18px 22px; border-bottom: 1px solid var(--line)">
+<h2 id="wd-set-title" style="margin: 0; font-size: 20px; letter-spacing: -0.02em">Settings</h2>
+<button type="button" class="btn" onClick="{{closeSettings}}" aria-label="Close settings" style="width: 40px; min-height: 40px; padding: 0; color: var(--text2)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg></button>
+</div>
+<div style="padding: 18px 22px; display: flex; flex-direction: column; gap: 22px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">Appearance</span>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+<span style="font-size: 14px; color: var(--text)">Theme</span>
+<div style="display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg)">
+<sc-for list="{{themeOpts}}" as="to" hint-placeholder-count="3"><button type="button" class="seg {{to.cls}}" onClick="{{to.pick}}">{{to.label}}</button></sc-for>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">GitHub issues</span>
+<label for="wd-repo" style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">Repository for “Open GitHub issue”
+<input id="wd-repo" value="{{repo}}" onChange="{{onRepo}}" placeholder="owner/repo" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface); color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none"></label>
+<label for="wd-labels" style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted)">Labels added to new issues
+<input id="wd-labels" value="{{labels}}" onChange="{{onLabels}}" placeholder="security, vulnerability" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line2); background: var(--surface); color: var(--text); font: 400 14px 'JetBrains Mono', monospace; outline: none"></label>
+<span style="font-size: 12px; color: var(--dim)">Issues open pre-filled on github.com. Nothing is posted without you.</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--dim)">Your data</span>
+<span style="font-size: 13px; line-height: 1.5; color: var(--muted)">Your stack ({{stackCount}} entries), triage statuses ({{triageCount}}) and notes live in this browser only. Export them to move machines or share with your team.</span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" class="btn btn-g" style="min-height: 40px; font-size: 13px">Export JSON</button>
+<button type="button" class="btn btn-g" style="min-height: 40px; font-size: 13px">Import JSON</button>
+<button type="button" class="btn" style="min-height: 40px; font-size: 13px; border: 1px solid var(--crit); color: var(--crit-t)">Reset everything</button>
+</div>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--line)">
+<span class="mono" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12.5px; color: var(--dim)"><a href="{{repoUrl}}" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--text2)">watchdog on <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="GitHub"><circle cx="6" cy="6" r="2.5"></circle><circle cx="6" cy="18" r="2.5"></circle><circle cx="18" cy="8" r="2.5"></circle><path d="M6 8.5v7M18 10.5c0 4-6 3-11 6"></path></svg></a> at <a href="{{releaseUrl}}" target="_blank" rel="noopener" title="Release notes for {{version}}">{{version}}</a></span>
+<span style="display: flex; gap: 8px">
+<button type="button" class="btn btn-g" onClick="{{closeSettings}}">Cancel</button>
+<button type="button" class="btn btn-p" onClick="{{closeSettings}}">Save</button>
+</span>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;},&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:960}}">
+var WD_SOURCES = [{"name": "Governments / CERTs", "desc": "Official agencies and national CERTs. Exploitation status, national advisories and regulatory notices.", "count": 6, "items": [{"name": "CISA Known Exploited Vulnerabilities", "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", "host": "cisa.gov"}, {"name": "CERT-EU security advisories", "url": "https://cert.europa.eu/publications/security-advisories/", "host": "cert.europa.eu"}, {"name": "CSSF ICT communiqués (Luxembourg)", "url": "https://www.cssf.lu/en/", "host": "cssf.lu"}, {"name": "CIRCL vulnerability lookup (Luxembourg)", "url": "https://vulnerability.circl.lu/", "host": "vulnerability.circl.lu"}, {"name": "NIST National Vulnerability Database", "url": "https://nvd.nist.gov/", "host": "nvd.nist.gov"}, {"name": "CERT-FR (ANSSI) avis", "url": "https://www.cert.ssi.gouv.fr/", "host": "cert.ssi.gouv.fr"}], "is_gov": true, "is_vendor": false, "is_db": false, "is_secvendor": false, "is_news": false, "color": "var(--blue)"}, {"name": "Vendors", "desc": "Security bulletins published by the makers of the software.", "count": 9, "items": [{"name": "Oracle Critical Patch Updates", "url": "https://www.oracle.com/security-alerts/", "host": "oracle.com"}, {"name": "OpenJDK vulnerability advisories", "url": "https://openjdk.org/groups/vulnerability/advisories/", "host": "openjdk.org"}, {"name": "Jenkins security advisories", "url": "https://www.jenkins.io/security/advisories/", "host": "jenkins.io"}, {"name": "Node.js security releases", "url": "https://nodejs.org/en/blog/vulnerability", "host": "nodejs.org"}, {"name": "Sonar community security advisories", "url": "https://community.sonarsource.com/", "host": "community.sonarsource.com"}, {"name": "Microsoft Security Response Center", "url": "https://msrc.microsoft.com/update-guide", "host": "msrc.microsoft.com"}, {"name": "Spring security advisories", "url": "https://spring.io/security", "host": "spring.io"}, {"name": "NGINX security advisories", "url": "https://nginx.org/en/security_advisories.html", "host": "nginx.org"}, {"name": "Palo Alto Networks advisories", "url": "https://security.paloaltonetworks.com/", "host": "security.paloaltonetworks.com"}], "is_gov": false, "is_vendor": true, "is_db": false, "is_secvendor": false, "is_news": false, "color": "var(--high)"}, {"name": "Advisory databases", "desc": "Package-level databases with affected and fixed versions.", "count": 5, "items": [{"name": "GitHub Advisory Database", "url": "https://github.com/advisories", "host": "github.com"}, {"name": "OSV.dev", "url": "https://osv.dev/", "host": "osv.dev"}, {"name": "Snyk Vulnerability DB", "url": "https://security.snyk.io/", "host": "security.snyk.io"}, {"name": "Docker Scout", "url": "https://scout.docker.com/", "host": "scout.docker.com"}, {"name": "GitLab Advisory Database", "url": "https://advisories.gitlab.com/", "host": "advisories.gitlab.com"}], "is_gov": false, "is_vendor": false, "is_db": true, "is_secvendor": false, "is_news": false, "color": "var(--lime)"}, {"name": "Security vendors", "desc": "Threat research from antivirus and security labs, shown as field reports.", "count": 4, "items": [{"name": "Sophos threat research", "url": "https://www.sophos.com/en-us/news/category/threat-research", "host": "sophos.com"}, {"name": "Kaspersky Securelist", "url": "https://securelist.com/", "host": "securelist.com"}, {"name": "ESET WeLiveSecurity", "url": "https://www.welivesecurity.com/", "host": "welivesecurity.com"}, {"name": "Sonatype research", "url": "https://www.sonatype.com/blog", "host": "sonatype.com"}], "is_gov": false, "is_vendor": false, "is_db": false, "is_secvendor": true, "is_news": false, "color": "var(--crit)"}, {"name": "Security news", "desc": "News coverage of new campaigns and disclosures.", "count": 3, "items": [{"name": "BleepingComputer", "url": "https://www.bleepingcomputer.com/", "host": "bleepingcomputer.com"}, {"name": "The Hacker News", "url": "https://thehackernews.com/", "host": "thehackernews.com"}, {"name": "SecurityWeek", "url": "https://www.securityweek.com/", "host": "securityweek.com"}], "is_gov": false, "is_vendor": false, "is_db": false, "is_secvendor": false, "is_news": true, "color": "var(--med)"}];
+var WD_REPORTS = [{"lab": "Kaspersky Securelist", "key": "kaspersky", "date": "2024-04", "title": "The xz backdoor story", "summary": "Analysis of the liblzma backdoor: how the malicious build step was hidden and how it hooked into sshd.", "cves": ["CVE-2024-3094"], "url": "https://securelist.com/"}, {"lab": "Google Project Zero", "key": "pz", "date": "2024-11", "title": "From Naptime to Big Sleep", "summary": "An AI agent found a previously unknown memory-safety bug in SQLite before it reached a release.", "cves": [], "url": "https://googleprojectzero.blogspot.com/"}, {"lab": "Sophos", "key": "sophos", "date": "2024-10", "title": "Pacific Rim", "summary": "A years-long investigation into state-backed groups targeting perimeter firewalls, Sophos devices included.", "cves": ["CVE-2020-12271", "CVE-2022-1040"], "url": "https://www.sophos.com/en-us/news/category/threat-research"}, {"lab": "ESET WeLiveSecurity", "key": "eset", "date": "2024-05", "title": "Ebury is alive but unseen", "summary": "The Linux SSH botnet has compromised hundreds of thousands of servers and moved into financial theft.", "cves": [], "url": "https://www.welivesecurity.com/"}, {"lab": "Microsoft Security Blog", "key": "microsoft", "date": "2024-01", "title": "Midnight Blizzard: guidance for responders", "summary": "How a nation-state actor used password spraying and OAuth apps against Microsoft, with detection advice.", "cves": [], "url": "https://www.microsoft.com/en-us/security/blog/"}, {"lab": "Kaspersky Securelist", "key": "kaspersky", "date": "2023-12", "title": "Operation Triangulation: the last (hardware) mystery", "summary": "The iOS zero-click chain behind Triangulation, including an undocumented hardware feature used to bypass memory protection.", "cves": ["CVE-2023-32434", "CVE-2023-38606", "CVE-2023-41990"], "url": "https://securelist.com/"}];
+var WD_LABS = [["all", "All labs"], ["kaspersky", "Kaspersky"], ["eset", "ESET"], ["sophos", "Sophos"], ["microsoft", "Microsoft"], ["pz", "Project Zero"]];
+var WD_ITEMS = [{"id": "CVE-2025-49596", "title": "MCP Inspector lets a web page run code on your machine", "summary": "The inspector proxy accepted unauthenticated requests, so a malicious website could reach it from the browser and execute commands on a developer workstation.", "cvss": 9.4, "severity": "critical", "published": "2025-06", "product": "npm · @modelcontextprotocol/inspector", "exploited": false, "category": "ai", "threat": "virus", "eco": "npm", "pkg": "@modelcontextprotocol/inspector", "affected": "< 0.14.1", "fixed": "0.14.1", "kevAction": null}, {"id": "CVE-2025-32711", "title": "EchoLeak: zero-click prompt injection in Microsoft 365 Copilot", "summary": "Crafted content in an email could steer Copilot into leaking data from the user’s context to an attacker, without the victim clicking anything.", "cvss": 9.3, "severity": "critical", "published": "2025-06", "product": "Microsoft 365 Copilot", "exploited": false, "category": "ai", "threat": "hacker", "eco": "Microsoft", "pkg": "Microsoft 365 Copilot", "affected": "Cloud service", "fixed": "Fixed server-side by Microsoft", "kevAction": null}, {"id": "CVE-2025-29927", "title": "Next.js middleware authorization bypass", "summary": "Sending an internal x-middleware-subrequest header made Next.js skip middleware entirely, bypassing auth checks implemented there.", "cvss": 9.1, "severity": "critical", "published": "2025-03-21", "product": "npm · next", "exploited": false, "category": "packages", "threat": "hacker", "eco": "npm", "pkg": "next", "affected": "11.1.4 – 15.2.2", "fixed": "12.3.5 · 13.5.9 · 14.2.25 · 15.2.3", "kevAction": null}, {"id": "CVE-2024-38063", "title": "Wormable Windows TCP/IP remote code execution over IPv6", "summary": "Specially crafted IPv6 packets could trigger an integer underflow in the TCP/IP stack and give an unauthenticated attacker code execution.", "cvss": 9.8, "severity": "critical", "published": "2024-08", "product": "Windows · tcpip.sys", "exploited": false, "category": "os", "threat": "worm", "eco": "Microsoft", "pkg": "Windows TCP/IP", "affected": "Windows 10, 11, Server 2008–2022 with IPv6", "fixed": "August 2024 security update", "kevAction": null}, {"id": "CVE-2024-6387", "title": "regreSSHion: unauthenticated RCE in OpenSSH server", "summary": "A signal handler race condition, a regression of a 2006 bug, can let a remote attacker run code as root on glibc-based Linux systems.", "cvss": 8.1, "severity": "high", "published": "2024-07-01", "product": "OpenSSH · sshd", "exploited": false, "category": "tools", "threat": "hacker", "eco": null, "pkg": "OpenSSH", "affected": "8.5p1 – 9.7p1 (glibc Linux)", "fixed": "9.8p1", "kevAction": null}, {"id": "CVE-2024-24790", "title": "Go net/netip misclassifies IPv4-mapped IPv6 addresses", "summary": "Methods like IsPrivate and IsLoopback returned wrong answers for IPv4-mapped IPv6 addresses, which can break allow-lists and SSRF protections.", "cvss": 9.8, "severity": "critical", "published": "2024-06", "product": "Go standard library", "exploited": false, "category": "languages", "threat": "bug", "eco": "Go", "pkg": "stdlib", "affected": "< 1.21.11, 1.22.0 – 1.22.3", "fixed": "1.21.11 · 1.22.4", "kevAction": null}, {"id": "CVE-2024-4577", "title": "PHP-CGI argument injection on Windows", "summary": "Windows “Best-Fit” character conversion lets attackers smuggle command-line options into php-cgi and execute arbitrary PHP code.", "cvss": 9.8, "severity": "critical", "published": "2024-06", "product": "PHP (CGI mode, Windows)", "exploited": true, "category": "languages", "threat": "virus", "eco": null, "pkg": "PHP", "affected": "8.1 < 8.1.29 · 8.2 < 8.2.20 · 8.3 < 8.3.8", "fixed": "8.1.29 · 8.2.20 · 8.3.8", "kevAction": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."}, {"id": "CVE-2024-3094", "title": "Backdoor hidden in xz / liblzma release tarballs", "summary": "Malicious code planted by a long-term maintainer hooked into sshd through systemd on some Linux distributions, enabling remote access for the attacker.", "cvss": 10.0, "severity": "critical", "published": "2024-03-29", "product": "xz-utils · liblzma", "exploited": false, "category": "supply", "threat": "trojan", "eco": null, "pkg": "xz-utils", "affected": "5.6.0, 5.6.1", "fixed": "Revert to 5.4.6, or 5.6.2+", "kevAction": null}, {"id": "CVE-2024-28849", "title": "follow-redirects leaks Proxy-Authorization across domains", "summary": "The Proxy-Authorization header was kept when following a redirect to another host, exposing proxy credentials.", "cvss": 6.5, "severity": "medium", "published": "2024-03", "product": "npm · follow-redirects", "exploited": false, "category": "packages", "threat": "bug", "eco": "npm", "pkg": "follow-redirects", "affected": "< 1.15.6", "fixed": "1.15.6", "kevAction": null}, {"id": "CVE-2024-21626", "title": "Leaky Vessels: container escape in runc", "summary": "A leaked file descriptor let a malicious image or build step reach the host filesystem and break out of the container.", "cvss": 8.6, "severity": "high", "published": "2024-01", "product": "runc (Docker, containerd, Kubernetes)", "exploited": false, "category": "tools", "threat": "bug", "eco": null, "pkg": "runc", "affected": "≤ 1.1.11", "fixed": "1.1.12", "kevAction": null}, {"id": "CVE-2023-44487", "title": "HTTP/2 Rapid Reset denial of service", "summary": "Opening and instantly cancelling streams floods servers with work, enabling record-breaking DDoS attacks against HTTP/2 endpoints.", "cvss": 7.5, "severity": "high", "published": "2023-10-10", "product": "HTTP/2 servers · nginx, Go, Netty, Envoy…", "exploited": true, "category": "tools", "threat": "worm", "eco": null, "pkg": "HTTP/2 servers", "affected": "Most HTTP/2 implementations", "fixed": "Vendor-specific patches", "kevAction": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."}, {"id": "CVE-2023-4863", "title": "libwebp heap overflow exploited through images", "summary": "A malformed WebP image could overflow a heap buffer in the decoder, leading to code execution in anything that renders images.", "cvss": 8.8, "severity": "high", "published": "2023-09", "product": "libwebp (Chrome, Electron, Pillow…)", "exploited": true, "category": "packages", "threat": "virus", "eco": null, "pkg": "libwebp", "affected": "< 1.3.2", "fixed": "1.3.2", "kevAction": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."}, {"id": "CVE-2021-44228", "title": "Log4Shell: JNDI lookup remote code execution", "summary": "Logging an attacker-controlled string could make Log4j fetch and run remote code via JNDI, one of the most exploited bugs ever.", "cvss": 10.0, "severity": "critical", "published": "2021-12-10", "product": "Maven · org.apache.logging.log4j:log4j-core", "exploited": true, "category": "packages", "threat": "worm", "eco": "Maven", "pkg": "org.apache.logging.log4j:log4j-core", "affected": "2.0-beta9 – 2.14.1", "fixed": "2.17.1 (Java 8+)", "kevAction": "Apply mitigations per vendor instructions or discontinue use of the product if mitigations are unavailable."}];
+class Component extends DCLogic {
+  componentDidMount() {
+    var self = this;
+    this.wdTimer = setInterval(function () { self.setState({ now: Date.now() }); }, 30000);
+  }
+  componentWillUnmount() { clearInterval(this.wdTimer); }
+  constructor(props) {
+    super(props);
+    this.state = { mobileNav: false, now: Date.now(), lab: 'all', sideCollapsed: false, acQuery: '', acIndex: 0, settingsOpen: false, repo: 'acme/api', labels: 'security', theme: null, alertsOpen: false, alertsOn: true, alertLevel: 'stack', view: 'inbox', sel: 'CVE-2025-29927', cat: 'all', exp: false, q: '', triage: { 'CVE-2024-6387': 'patched' }, stack: ['next', 'windows', 'openssh'], cleared: false };
+  }
+  renderVals() {
+    var self = this, st = this.state;
+    var sevShort = { critical: 'CRIT', high: 'HIGH', medium: 'MED' };
+    var statusLabel = { investigating: 'Investigating', patched: 'Patched', not_affected: 'Not affected', ignored: 'Ignored' };
+    var catLabel = { all: 'All', packages: 'Packages', languages: 'Languages', os: 'OS', ai: 'AI', tools: 'Tools', supply: 'Supply chain attack' };
+    var isMine = function (v) {
+      var hay = (v.title + ' ' + v.product + ' ' + v.pkg).toLowerCase();
+      return st.stack.some(function (s) { return new RegExp('(^|[^\\w.])' + s + '($|[^\\w])').test(hay); });
+    };
+    var cmdFor = function (v) {
+      var m = String(v.fixed || '').match(/\d+(\.\d+)+/g);
+      if (!m || !v.eco) return '';
+      var f = m.sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); })[m.length - 1];
+      if (v.eco === 'npm') return 'npm install ' + v.pkg + '@' + f;
+      if (v.eco === 'Maven') return 'implementation("' + v.pkg + ':' + f + '")';
+      if (v.eco === 'Go') return 'go mod edit -toolchain=go' + f;
+      return '';
+    };
+    var risk = function (v) { return (v.exploited ? 100 : 0) + (isMine(v) ? 30 : 0) + v.cvss * 5; };
+    var all = WD_ITEMS.map(function (v) {
+      var status = st.triage[v.id] || '';
+      return Object.assign({}, v, { mine: isMine(v), status: status, isNew: !status && !st.cleared });
+    });
+    var base = all.filter(function (v) {
+      if (st.view === 'inbox') return v.isNew;
+      if (st.view === 'stack-feed') return v.mine;
+      if (st.view === 'triage') return !!v.status;
+      return true;
+    });
+    var q = (st.q || '').toLowerCase();
+    var shown = base.filter(function (v) {
+      if (st.cat !== 'all' && v.category !== st.cat) return false;
+      if (st.exp && !v.exploited) return false;
+      if (q && (v.id + ' ' + v.title + ' ' + v.product).toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    }).sort(function (a, b) { return risk(b) - risk(a); });
+    var rows = shown.map(function (v) {
+      return Object.assign({}, v, {
+        sevText: sevShort[v.severity] + ' ' + v.cvss.toFixed(1), statusLabel: statusLabel[v.status] || '',
+        isBug: v.threat === 'bug', isWorm: v.threat === 'worm', isVirus: v.threat === 'virus', isTrojan: v.threat === 'trojan', isHacker: v.threat === 'hacker',
+        cls: (v.id === st.sel ? 'trow-sel ' : '') + (v.status === 'patched' || v.status === 'ignored' || v.status === 'not_affected' ? 'trow-done' : ''),
+        pick: function () { self.setState({ sel: v.id }); }
+      });
+    });
+    var inbox = all.filter(function (v) { return v.isNew; });
+    var stackHot = inbox.filter(function (v) { return v.mine && v.exploited; }).length;
+    var hot = inbox.filter(function (v) { return v.exploited; }).length;
+    var go = function (view) { return function () { self.setState({ view: view, cat: 'all', mobileNav: false }); }; };
+    var nav = [
+      { key: 'inbox', label: 'Inbox', count: inbox.length, ncls: hot ? 'n-hot' : 'n-new' },
+      { key: 'all', label: 'All threats', count: all.length },
+      { key: 'stack-feed', label: 'My stack', count: all.filter(function (v) { return v.mine; }).length, ncls: stackHot ? 'n-hot' : '' },
+      { key: 'triage', label: 'Triage', count: all.filter(function (v) { return v.status; }).length },
+      { key: 'scan', label: 'Scan dependencies', count: '', label2: 'Tools' },
+      { key: 'stack', label: 'Edit my stack', count: st.stack.length },
+      { key: 'reports', label: 'Field reports', count: '', label2: 'Intel' },
+      { key: 'sources', label: 'Sources', count: 27 }
+    ].map(function (n) {
+      var ic = {}; ['inbox', 'all', 'stackfeed', 'triage', 'scan', 'stack', 'reports', 'sources'].forEach(function (k) { ic['ic_' + k] = n.key.replace('-', '') === k; });
+      var base = Object.assign({ ncls: '', label2: '' }, n);
+      return Object.assign(base, ic, {
+        cls: st.view === n.key ? 'nav-on' : '', go: go(n.key),
+        dotCls: '',
+        ncls: base.count ? base.ncls : '',
+        aria: base.label + (base.count !== '' && base.count !== undefined ? ', ' + base.count : '')
+      });
+    });
+    var titles = {
+      inbox: ['Inbox', 'New since you last cleared it, not triaged yet. Riskiest first.'],
+      all: ['All threats', 'Everything the dog caught in the window.'],
+      'stack-feed': ['My stack', 'Threats matching what you told the dog you run.'],
+      triage: ['Triage', 'Threats you have acted on.']
+    };
+    var isList = !!titles[st.view];
+    var t = titles[st.view] || titles.all;
+    var sel = all.filter(function (v) { return v.id === st.sel; })[0];
+    var selVals = sel ? Object.assign({}, sel, { cvssText: sel.cvss.toFixed(1), pct: Math.round(sel.cvss * 10), cmd: cmdFor(sel), affected: sel.affected || 'See advisory', fixed: sel.fixed || 'See advisory', product: (sel.eco ? sel.eco + ' · ' : '') + sel.pkg }) : {};
+    var presetsList = [['Next.js', 'next'], ['React', 'react'], ['Django', 'django'], ['Log4j', 'log4j'], ['Go stdlib', 'go standard library'], ['Windows', 'windows'], ['Linux kernel', 'linux kernel'], ['OpenSSH', 'openssh'], ['Docker', 'docker'], ['Kubernetes', 'kubernetes'], ['MCP', 'mcp'], ['Copilot', 'copilot'], ['PHP', 'php'], ['runc', 'runc']];
+    var alertList = inbox.filter(function (v) {
+      if (!v.mine) return false;
+      if (st.alertLevel === 'exploited') return v.exploited;
+      if (st.alertLevel === 'critical') return v.exploited || v.severity === 'critical';
+      return true;
+    }).sort(function (a, b) { return risk(b) - risk(a); }).map(function (v) {
+      return { id: v.id, title: v.title, severity: v.severity, exploited: v.exploited, sevText: sevShort[v.severity] + ' ' + v.cvss.toFixed(1),
+        open: function () { self.setState({ sel: v.id, view: 'all', alertsOpen: false }); } };
+    });
+    var WD_CATALOG = [{"label": "express", "kind": "npm"}, {"label": "lodash", "kind": "npm"}, {"label": "axios", "kind": "npm"}, {"label": "react", "kind": "npm"}, {"label": "vue", "kind": "npm"}, {"label": "angular", "kind": "npm"}, {"label": "svelte", "kind": "npm"}, {"label": "nestjs", "kind": "npm"}, {"label": "webpack", "kind": "npm"}, {"label": "vite", "kind": "npm"}, {"label": "django", "kind": "PyPI"}, {"label": "flask", "kind": "PyPI"}, {"label": "fastapi", "kind": "PyPI"}, {"label": "requests", "kind": "PyPI"}, {"label": "numpy", "kind": "PyPI"}, {"label": "pandas", "kind": "PyPI"}, {"label": "pillow", "kind": "PyPI"}, {"label": "transformers", "kind": "PyPI"}, {"label": "langchain", "kind": "PyPI"}, {"label": "vllm", "kind": "PyPI"}, {"label": "pytorch", "kind": "AI"}, {"label": "tensorflow", "kind": "AI"}, {"label": "llama.cpp", "kind": "AI"}, {"label": "ollama", "kind": "AI"}, {"label": "openai", "kind": "AI"}, {"label": "spring boot", "kind": "Maven"}, {"label": "log4j", "kind": "Maven"}, {"label": "jackson-databind", "kind": "Maven"}, {"label": "netty", "kind": "Maven"}, {"label": "hibernate", "kind": "Maven"}, {"label": "tomcat", "kind": "Maven"}, {"label": "rails", "kind": "RubyGems"}, {"label": "laravel", "kind": "Packagist"}, {"label": "symfony", "kind": "Packagist"}, {"label": "tokio", "kind": "crates.io"}, {"label": "gin", "kind": "Go"}, {"label": "grpc", "kind": "Go"}, {"label": "postgresql", "kind": "Database"}, {"label": "mysql", "kind": "Database"}, {"label": "redis", "kind": "Database"}, {"label": "mongodb", "kind": "Database"}, {"label": "elasticsearch", "kind": "Database"}, {"label": "kafka", "kind": "Tool"}, {"label": "rabbitmq", "kind": "Tool"}, {"label": "terraform", "kind": "Tool"}, {"label": "ansible", "kind": "Tool"}, {"label": "jenkins", "kind": "Tool"}, {"label": "gitlab", "kind": "Tool"}, {"label": "github actions", "kind": "Tool"}, {"label": "argo cd", "kind": "Tool"}, {"label": "helm", "kind": "Tool"}, {"label": "envoy", "kind": "Tool"}, {"label": "haproxy", "kind": "Tool"}, {"label": "apache http server", "kind": "Tool"}, {"label": "openssl", "kind": "Tool"}, {"label": "curl", "kind": "Tool"}, {"label": "git", "kind": "Tool"}, {"label": "visual studio code", "kind": "Tool"}, {"label": "chrome", "kind": "Browser"}, {"label": "firefox", "kind": "Browser"}, {"label": "safari", "kind": "Browser"}, {"label": "ubuntu", "kind": "OS"}, {"label": "debian", "kind": "OS"}, {"label": "red hat enterprise linux", "kind": "OS"}, {"label": "ios", "kind": "OS"}, {"label": "android", "kind": "OS"}, {"label": "vmware esxi", "kind": "Infra"}, {"label": "citrix", "kind": "Infra"}, {"label": "fortinet", "kind": "Infra"}, {"label": "cisco ios xe", "kind": "Infra"}];
+    var acQ = (st.acQuery || '').trim().toLowerCase();
+    var acMatches = !acQ ? [] : WD_CATALOG.concat(presetsList.map(function (p) { return { label: p[1], kind: 'Quick add' }; })).filter(function (c, i, arr) {
+      return c.label.indexOf(acQ) !== -1 && st.stack.indexOf(c.label) === -1 && arr.findIndex(function (d) { return d.label === c.label; }) === i;
+    }).sort(function (a, b) { return a.label.indexOf(acQ) - b.label.indexOf(acQ) || a.label.length - b.label.length; }).slice(0, 6);
+    if (acQ && st.stack.indexOf(acQ) === -1 && !acMatches.some(function (c) { return c.label === acQ; })) acMatches.push({ label: acQ, kind: 'Add as typed' });
+    var acIdx = Math.min(st.acIndex || 0, Math.max(acMatches.length - 1, 0));
+    var addToStack = function (name) {
+      var n = String(name || '').trim().toLowerCase();
+      if (!n) return;
+      var s2 = st.stack.slice();
+      if (s2.indexOf(n) === -1) s2.push(n);
+      self.setState({ stack: s2, acQuery: '', acIndex: 0 });
+    };
+    // Sweeps run at 06:00 Europe/Paris. Walk minute by minute to the previous and next 06:00 there.
+    var parisHM = (function () {
+      try { var f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); return function (t) { return f.format(new Date(t)); }; }
+      catch (e) { return function (t) { var d = new Date(t + 3600000); return ('0' + d.getUTCHours()).slice(-2) + ':' + ('0' + d.getUTCMinutes()).slice(-2); }; }
+    })();
+    var nowMs = Math.floor((st.now || Date.now()) / 60000) * 60000;
+    var nextM = 0, prevM = 0;
+    for (var m = 1; m <= 1500; m++) { if (!nextM && parisHM(nowMs + m * 60000) === '06:00') nextM = m; if (!prevM && parisHM(nowMs - m * 60000) === '06:00') prevM = m; if (nextM && prevM) break; }
+    if (parisHM(nowMs) === '06:00') prevM = 0;
+    var agoTxt = prevM < 60 ? (prevM < 1 ? 'just now' : prevM + ' min ago') : Math.floor(prevM / 60) + ' h ago';
+    var sweepText = 'swept ' + agoTxt + ' · next in ' + Math.floor(nextM / 60) + 'h' + ('0' + (nextM % 60)).slice(-2);
+    var theme = st.theme || this.props.theme || 'dark';
+    return {
+      alertsOpen: !!st.alertsOpen,
+      bellCls: st.alertsOpen ? 'bell-on' : '',
+      toggleAlerts: function () { self.setState({ alertsOpen: !st.alertsOpen, settingsOpen: false }); },
+      alertsOn: !!st.alertsOn,
+      swCls: st.alertsOn ? 'sw-on' : '',
+      alertsHint: st.alertsOn ? 'On. You hear about new threats in your stack when you open watchdog.' : 'Off. Turn on to get a browser notification for new threats in your stack.',
+      toggleAlertsOn: function () { self.setState({ alertsOn: !st.alertsOn }); },
+      alertLevels: [['exploited', 'Exploited only'], ['critical', 'Critical or exploited'], ['stack', 'Anything in my stack']].map(function (l) {
+        return { label: l[1], cls: st.alertLevel === l[0] ? 'seg-on' : '', pick: function () { self.setState({ alertLevel: l[0] }); } };
+      }),
+      alertItems: alertList,
+      alertEmpty: alertList.length === 0,
+      alertCount: st.alertsOn && alertList.length ? alertList.length : 0,
+      settingsOpen: !!st.settingsOpen,
+      gearCls: st.settingsOpen ? 'bell-on' : '',
+      openSettings: function () { self.setState({ settingsOpen: true, alertsOpen: false }); },
+      closeSettings: function () { self.setState({ settingsOpen: false }); },
+      themeOpts: [['dark', 'Dark'], ['light', 'Light']].map(function (o) {
+        return { label: o[1], cls: theme === o[0] ? 'seg-on' : '', pick: function () { self.setState({ theme: o[0] }); } };
+      }),
+      repo: st.repo,
+      onRepo: function (e) { self.setState({ repo: e.target.value }); },
+      labels: st.labels,
+      onLabels: function (e) { self.setState({ labels: e.target.value }); },
+      stackCount: st.stack.length,
+      triageCount: Object.keys(st.triage).length,
+      isSources: st.view === 'sources',
+      sourceGroups: WD_SOURCES,
+      sourceTotal: WD_SOURCES.reduce(function (n, g) { return n + g.count; }, 0),
+      sourceGroupCount: WD_SOURCES.length,
+      acQuery: st.acQuery,
+      acOpen: acMatches.length > 0,
+      acItems: acMatches.map(function (c, i) { return { label: c.label, kind: c.kind, active: i === acIdx, cls: i === acIdx ? 'acopt-on' : '', pick: function () { addToStack(c.label); } }; }),
+      onAcInput: function (e) { self.setState({ acQuery: e.target.value, acIndex: 0 }); },
+      onAcKey: function (e) {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          var n = acMatches.length; if (!n) return;
+          self.setState({ acIndex: (acIdx + (e.key === 'ArrowDown' ? 1 : n - 1)) % n });
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          addToStack(acMatches.length ? acMatches[acIdx].label : st.acQuery);
+        } else if (e.key === 'Escape') {
+          self.setState({ acQuery: '', acIndex: 0 });
+        }
+      },
+      acAdd: function () { addToStack(acMatches.length ? acMatches[acIdx].label : st.acQuery); },
+      stackTags: st.stack.map(function (n) { return { name: n, remove: function () { var s2 = st.stack.filter(function (x) { return x !== n; }); self.setState({ stack: s2 }); } }; }),
+      sideCls: st.sideCollapsed ? 'side-collapsed' : '',
+      sideCollapsed: !!st.sideCollapsed,
+      sideExpanded: !st.sideCollapsed,
+      sideToggleLabel: st.sideCollapsed ? 'Expand sidebar' : 'Collapse sidebar',
+      toggleSide: function () { self.setState({ sideCollapsed: !st.sideCollapsed }); },
+      barkCls: stackHot ? 'barking' : 'calm',
+      barkCount: stackHot || 0,
+      barkWord: stackHot ? 'woof!' : '',
+      barkTitle: stackHot ? 'Woof! ' + stackHot + ' new exploited ' + (stackHot === 1 ? 'threat' : 'threats') + ' in your stack' : 'Patrolling. Nothing new in your stack is being exploited',
+      barkGo: function () { self.setState({ view: 'stack-feed', cat: 'all' }); },
+      isReports: st.view === 'reports',
+      labChips: WD_LABS.map(function (l) {
+        return { label: l[1], count: l[0] === 'all' ? WD_REPORTS.length : WD_REPORTS.filter(function (r) { return r.key === l[0]; }).length, cls: st.lab === l[0] ? 'seg-on' : '', pick: function () { self.setState({ lab: l[0] }); } };
+      }),
+      reportCards: WD_REPORTS.filter(function (r) { return st.lab === 'all' || r.key === st.lab; }).map(function (r) {
+        var colors = { kaspersky: 'var(--lime)', eset: 'var(--blue)', sophos: 'var(--high)', microsoft: 'var(--med)', pz: 'var(--crit)' };
+        return Object.assign({}, r, {
+          color: colors[r.key] || 'var(--text2)',
+          initials: r.lab.split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase(),
+          site: r.url.split('/')[2].replace('www.', ''),
+          hasCves: r.cves.length > 0,
+          cves: r.cves.map(function (id) {
+            var inFeed = all.some(function (v) { return v.id === id; });
+            return { id: id, cls: inFeed ? 'cvechip-feed' : '', hint: inFeed ? 'Open in watchdog' : 'Not in the current feed',
+              open: function () { if (inFeed) self.setState({ sel: id, view: 'all', cat: 'all' }); } };
+          })
+        });
+      }),
+      sweepText: sweepText,
+      version: 'v0.1.0',
+      repoUrl: 'https://github.com/tinesoft/watchdog',
+      releaseUrl: 'https://github.com/tinesoft/watchdog/releases/tag/v0.1.0',
+      mobileNavOpen: !!st.mobileNav,
+      mobileNavClosed: !st.mobileNav,
+      mobileNavCls: st.mobileNav ? 'side-open' : '',
+      mobileNavLabel: st.mobileNav ? 'Close navigation' : 'Open navigation',
+      toggleMobileNav: function () { self.setState({ mobileNav: !st.mobileNav, alertsOpen: false }); },
+      openSettingsMobile: function () { self.setState({ settingsOpen: true, mobileNav: false, alertsOpen: false }); },
+      themeCls: theme === 'light' ? 'wd-light' : 'wd-dark',
+      isDark: theme !== 'light',
+      isLight: theme === 'light',
+      themeLabel: theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme',
+      toggleTheme: function () { self.setState({ theme: theme === 'light' ? 'dark' : 'light' }); },
+      nav: nav,
+      q: st.q,
+      onQ: function (e) { self.setState({ q: e.target.value, view: titles[st.view] ? st.view : 'all' }); },
+      mascotCls: stackHot ? 'mascot-alarm' : '',
+      mascotColor: stackHot ? 'var(--crit)' : 'var(--lime)',
+      cardBorder: stackHot ? 'var(--crit)' : 'var(--line)',
+      cardColor: stackHot ? 'var(--crit-t)' : 'var(--lime)',
+      cardTitle: stackHot ? '// woof! ' + stackHot + ' exploited' : '// patrolling',
+      cardText: stackHot ? 'New threats in your stack are being exploited in the wild.' : 'Nothing new in your stack is being exploited.',
+      isList: isList, isScan: st.view === 'scan', isStackEdit: st.view === 'stack', isInbox: st.view === 'inbox',
+      viewTitle: t[0], viewSub: t[1],
+      clearInbox: function () { self.setState({ cleared: true, alertsOpen: false }); },
+      cats: ['all', 'packages', 'languages', 'os', 'ai', 'tools', 'supply'].map(function (k) {
+        return { label: catLabel[k], count: k === 'all' ? base.length : base.filter(function (v) { return v.category === k; }).length, cls: st.cat === k ? 'seg-on' : '', pick: function () { self.setState({ cat: k }); } };
+      }),
+      expCls: st.exp ? 'pick-on' : '',
+      toggleExp: function () { self.setState({ exp: !st.exp }); },
+      rows: rows,
+      empty: rows.length === 0,
+      showDetail: isList && !!sel,
+      sel: selVals,
+      closeSel: function () { self.setState({ sel: null }); },
+      statusPicks: [['investigating', 'Investigating'], ['patched', 'Patched'], ['not_affected', 'Not affected'], ['ignored', 'Ignored']].map(function (p) {
+        var on = sel && st.triage[sel.id] === p[0];
+        return { label: p[1], cls: on ? 'pick-on' : '', set: function () { var tr = Object.assign({}, st.triage); if (on) delete tr[sel.id]; else tr[sel.id] = p[0]; self.setState({ triage: tr }); } };
+      }),
+      scanInput: '{\n  "dependencies": {\n    "next": "14.1.0",\n    "follow-redirects": "1.15.5",\n    "@modelcontextprotocol/inspector": "0.13.0"\n  }\n}',
+      scanResults: [
+        { name: '@modelcontextprotocol/inspector', version: '0.13.0', target: '0.14.1', id: 'CVE-2025-49596', severity: 'critical', cmd: 'npm install @modelcontextprotocol/inspector@0.14.1' },
+        { name: 'next', version: '14.1.0', target: '14.2.25', id: 'CVE-2025-29927', severity: 'critical', cmd: 'npm install next@14.2.25' },
+        { name: 'follow-redirects', version: '1.15.5', target: '1.15.6', id: 'CVE-2024-28849', severity: 'medium', cmd: 'npm install follow-redirects@1.15.6' }
+      ],
+      presets: presetsList.map(function (p) {
+        var on = st.stack.indexOf(p[1]) !== -1;
+        return { label: p[0], mark: on ? '✓' : '+', cls: on ? 'preset-on' : '', toggle: function () { var s = st.stack.slice(); if (on) s.splice(s.indexOf(p[1]), 1); else s.push(p[1]); self.setState({ stack: s }); } };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

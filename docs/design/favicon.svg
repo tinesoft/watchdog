@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <title>watchdog</title>
+  <style>
+    .plate { fill: #0E1318; stroke: #C6FF3D; }
+    .dog { stroke: #C6FF3D; }
+    .eye { fill: #C6FF3D; }
+    @media (prefers-color-scheme: light) {
+      .plate { fill: #FFFFFF; stroke: #3F6D0A; }
+      .dog { stroke: #3F6D0A; }
+      .eye { fill: #3F6D0A; }
+    }
+  </style>
+  <rect class="plate" x="1.25" y="1.25" width="29.5" height="29.5" rx="8" stroke-width="2"/>
+  <path class="dog" d="M7 24 L9 14 L10 6 L14 12 L17 7 L19 13 L26 16 Q27.5 17 26.5 18.5 L21 20 L15 23 Z" fill="none" stroke-width="2" stroke-linejoin="round"/>
+  <circle class="eye" cx="17.5" cy="15" r="1.9"/>
+</svg>
