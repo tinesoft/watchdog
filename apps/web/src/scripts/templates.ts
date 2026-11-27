@@ -277,10 +277,10 @@ ${sevTips.map(([k, l, tip]) => `<span class="lg lg-r" tabindex="0" aria-describe
 function row(v: Row, selected: boolean): string {
   const done = v.status === 'patched' || v.status === 'ignored' || v.status === 'not_affected'
   return `<button type="button" class="trow ${selected ? 'trow-sel' : ''} ${done ? 'trow-done' : ''}" data-act="pick" data-arg="${esc(v.id)}" aria-label="${esc(v.id)}: ${esc(v.title)}">
-<span class="ic-${v.severity}" style="display: inline-flex; width: 36px; height: 36px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); align-items: center; justify-content: center">${icons[v.threat]}</span>
-<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span class="mono" style="font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center">${esc(v.id)}${v.isNew ? '<span class="newtag">NEW</span>' : ''}</span><span style="font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">${esc(v.title)}</span></span>
+<span class="trow-ic ic-${v.severity}" style="display: inline-flex; width: 36px; height: 36px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); align-items: center; justify-content: center">${icons[v.threat]}</span>
+<span class="trow-main" style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span class="mono" style="font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center">${esc(v.id)}${v.isNew ? '<span class="newtag">NEW</span>' : ''}</span><span class="trow-title" style="font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">${esc(v.title)}</span></span>
 <span class="sev sev-${v.severity}">${sevShort[v.severity]} ${v.cvss.toFixed(1)}</span>
-<span style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">${v.exploited ? '<span class="kev">exploited</span>' : ''}${v.mine ? '<span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--lime)">◆ my stack</span>' : ''}${v.status ? `<span class="st st-${v.status}">${statusLabel[v.status]}</span>` : ''}</span></button>`
+<span class="trow-tags" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">${v.exploited ? '<span class="kev">exploited</span>' : ''}${v.mine ? '<span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--lime)">◆ my stack</span>' : ''}${v.status ? `<span class="st st-${v.status}">${statusLabel[v.status]}</span>` : ''}</span></button>`
 }
 
 export function listView(c: Ctx): string {

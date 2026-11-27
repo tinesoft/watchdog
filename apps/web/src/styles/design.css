@@ -1181,6 +1181,35 @@ a:hover {
     left: auto;
     right: 0;
   }
+  /* Threat rows: icon | ID and title | severity, with the tags on a line under the title. */
+  .trow {
+    grid-template-columns: 32px minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 12px;
+    row-gap: 6px;
+    padding: 12px;
+  }
+  .trow-ic {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .trow-title {
+    white-space: normal !important;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .trow-tags {
+    grid-column: 2 / -1;
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    align-items: center !important;
+    gap: 6px 10px !important;
+  }
+  .trow-tags:empty {
+    display: none;
+  }
 }
 /* Settings: issue labels as chips */
 .chipbox {

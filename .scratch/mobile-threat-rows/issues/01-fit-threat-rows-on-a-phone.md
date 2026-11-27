@@ -1,6 +1,6 @@
 # Fit Threat rows on a phone
 
-Status: needs-triage
+Status: ready-for-agent
 
 ## Why
 
@@ -16,9 +16,19 @@ The cause is the row grid. `.trow` in `apps/web/src/styles/design.css` (and in t
 
 ## Acceptance criteria (draft)
 
-- [ ] The design artifact's 760px block sets the phone row layout first, then it is synced to `docs/design/` (see `docs/agents/design.md`).
-- [ ] At 390px a CVE ID stays on one line and the title shows at least about 25 characters.
-- [ ] A row with all three tags (exploited, my stack, a Triage status) still fits, checked with a screenshot.
-- [ ] `e2e/mobile.spec.ts` still passes (no sideways scroll).
+- [x] The design artifact's 760px block sets the phone row layout first, then it is synced to `docs/design/` (see `docs/agents/design.md`).
+- [x] At 390px a CVE ID stays on one line and the title shows at least about 25 characters.
+- [x] A row with all three tags (exploited, my stack, a Triage status) still fits, checked with a screenshot.
+- [x] `e2e/mobile.spec.ts` still passes (no sideways scroll).
 
 ## Comments
+
+- 2026-11-27: Decided (only inside the 760px block; desktop unchanged; design first, then sync and code):
+  - **Layout**: the grid becomes icon | main | severity chip. The tags (exploited, ◆ my stack, Triage status) wrap on one line under the title and span the main and chip columns.
+  - **Icon**: the tile shrinks to 32px and stays.
+  - **Title**: up to two lines, then an ellipsis.
+- 2026-11-27: Done.
+  - **Design**: version 49 of the design artifact, synced to `docs/design/Main.dc.html`. The row's parts now have classes (`trow-ic`, `trow-main`, `trow-title`, `trow-tags`), with phone rules in the 760px block. The same classes and rules are in `templates.ts` (`row()`) and `styles/design.css`.
+  - **Title width**: at 390px the title gets about 196px, not the 270px estimated while deciding, because the severity chip keeps its column for the whole row. That is about 25 characters a line on two lines, which meets the criterion. To give the title the full width, the chip would have to move into the ID line, which changes the markup.
+  - **Test**: `e2e/mobile.spec.ts` covers a row with all three tags (Log4Shell: exploited, my stack, Investigating). It checks the ID height (one line), the title width (more than 180px), that the tags stay inside the row, and that nothing scrolls sideways.
+  - **Screenshots**: 390px and desktop, checked. Desktop is unchanged.

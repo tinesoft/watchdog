@@ -161,6 +161,12 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 .drawer-extra{display:flex}
 .nav-backdrop{all:unset;display:block;position:fixed;inset:60px 0 0 0;z-index:35;background:rgba(4,6,8,.5)}
 .mainpane{padding:16px 14px 40px !important}
+/* Threat rows: icon | ID and title | severity, with the tags on a line under the title. */
+.trow{grid-template-columns:32px minmax(0,1fr) auto;align-items:start;column-gap:12px;row-gap:6px;padding:12px}
+.trow-ic{width:32px !important;height:32px !important}
+.trow-title{white-space:normal !important;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2}
+.trow-tags{grid-column:2 / -1;flex-direction:row !important;flex-wrap:wrap;align-items:center !important;gap:6px 10px !important}
+.trow-tags:empty{display:none}
 }
 .chipbox{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:44px;padding:5px 8px;border-radius:10px;border:1px solid var(--line2);background:var(--surface);cursor:text;transition:border-color .2s}
 .chipbox:focus-within{border-color:var(--lime)}
@@ -313,19 +319,19 @@ a{color:var(--lime)}a:hover{color:var(--lime-soft)}
 <div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface)">
 <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
 <button type="button" class="trow {{r.cls}}" onClick="{{r.pick}}" aria-label="{{r.id}}: {{r.title}}">
-<span class="ic-{{r.severity}}" style="display: inline-flex; width: 36px; height: 36px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); align-items: center; justify-content: center">
+<span class="trow-ic ic-{{r.severity}}" style="display: inline-flex; width: 36px; height: 36px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); align-items: center; justify-content: center">
 <sc-if value="{{r.isBug}}" hint-placeholder-val="{{ true }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><ellipse cx="12" cy="14" rx="5" ry="6.5"></ellipse><circle cx="12" cy="6" r="2.5"></circle><path d="M12 8v12M7 11H3M7 15H3M7 19l-3 2M17 11h4M17 15h4M17 19l3 2"></path></svg></sc-if>
 <sc-if value="{{r.isWorm}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M2 16c2-4 4-4 6 0s4 4 6 0 3-5 6-6"></path><circle cx="20.5" cy="9.5" r="1.8"></circle></svg></sc-if>
 <sc-if value="{{r.isVirus}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><path d="M12 7V3M12 21v-4M7 12H3M21 12h-4M8.5 8.5L5.6 5.6M18.4 18.4l-2.9-2.9M15.5 8.5l2.9-2.9M5.6 18.4l2.9-2.9"></path></svg></sc-if>
 <sc-if value="{{r.isTrojan}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h10v5H4zM13 10l3-6h4v3h-3l-2 3M6 15v4M12 15v4M3 19h12"></path><circle cx="5" cy="21" r="1"></circle><circle cx="13" cy="21" r="1"></circle></svg></sc-if>
 <sc-if value="{{r.isHacker}}" hint-placeholder-val="{{ false }}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21c0-7 3-12 8-18 5 6 8 11 8 18"></path><path d="M8 14c0-3 2-5 4-5s4 2 4 5-2 4-4 4-4-1-4-4z"></path></svg></sc-if>
 </span>
-<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span class="trow-main" style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
 <span class="mono" style="font-size: 13px; font-weight: 600; display: flex; gap: 8px; align-items: center">{{r.id}}<sc-if value="{{r.isNew}}" hint-placeholder-val="{{ false }}"><span class="newtag">NEW</span></sc-if></span>
-<span style="font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.title}}</span>
+<span class="trow-title" style="font-size: 15px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.title}}</span>
 </span>
 <span class="sev sev-{{r.severity}}">{{r.sevText}}</span>
-<span style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+<span class="trow-tags" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
 <sc-if value="{{r.exploited}}" hint-placeholder-val="{{ false }}"><span class="kev">exploited</span></sc-if>
 <sc-if value="{{r.mine}}" hint-placeholder-val="{{ false }}"><span class="mono" style="font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--lime)">◆ my stack</span></sc-if>
 <sc-if value="{{r.status}}" hint-placeholder-val="{{ false }}"><span class="st st-{{r.status}}">{{r.statusLabel}}</span></sc-if>
