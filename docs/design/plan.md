@@ -119,7 +119,7 @@ Items in the design that section 2 did not list. All are in the MVP.
 
 Written after trying every endpoint. This replaces the Sources table in section 3 where they differ.
 
-- **Creates Threats:** CISA KEV (exploitation status, and entries added in the last 90 days plus any the last Sweep knew), GitHub Advisory Database (reviewed critical and high advisories from the last 90 days, which carry ecosystem, package, affected and fixed versions), NVD (critical CVEs from the last 30 days, capped at 400, plus per-CVE score lookups, capped at 25 per Sweep).
+- **Creates Threats:** CISA KEV (exploitation status, and entries added in the last 90 days plus any the last Sweep knew), GitHub Advisory Database (reviewed critical and high advisories from the last 90 days, which carry ecosystem, package, affected and fixed versions), NVD (critical CVEs from the last 30 days, whether NVD or the CVE's assigner scored them, capped at 2,500, plus per-CVE score lookups, capped at 25 per Sweep).
 - **Adds advisory links to existing Threats:** CERT-FR (advisory pages are opened to read their CVE list), Microsoft MSRC, Spring, Jenkins, Node.js.
 - **Field reports (9 labs):** Kaspersky, ESET, Sophos, Sonatype, Microsoft Security Blog, Google Project Zero, BleepingComputer, The Hacker News, SecurityWeek, last 21 days, 12 per lab.
 - **Link-only (14):** CERT-EU (no feed), CSSF, CIRCL, OSV.dev (used live by Scan instead), GitLab Advisory DB (blocked for bots), Snyk, Docker Scout, Oracle CPU, OpenJDK, NGINX, Palo Alto, Sonar community. CIRCL and OSV can move to collected later.

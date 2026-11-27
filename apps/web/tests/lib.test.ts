@@ -400,6 +400,90 @@ describe('collector: enrichment', () => {
   })
 })
 
+import { fetchNvdCritical, toCandidate } from '../scripts/collect/nvd.ts'
+import { get } from '../scripts/collect/http.ts'
+describe('collector: NVD', () => {
+  const metric = (type: 'Primary' | 'Secondary', baseScore: number) => ({
+    type,
+    cvssData: { baseScore },
+  })
+  const raw = (id: string, metrics: Record<string, ReturnType<typeof metric>[]>) => ({
+    cve: {
+      id,
+      published: '2026-11-19T15:17:47.803',
+      descriptions: [{ lang: 'en', value: `${id}. In the Linux kernel, a bug.` }],
+      metrics,
+    },
+  })
+
+  it('keeps a CVE whose only critical score comes from its assigner (CVE-2026-99362)', async () => {
+    const urls: string[] = []
+    const page = {
+      totalResults: 3,
+      vulnerabilities: [
+        raw('CVE-2026-99362', { cvssMetricV31: [metric('Secondary', 9.8)] }),
+        raw('CVE-HIGH', { cvssMetricV31: [metric('Primary', 7.5)] }),
+        raw('CVE-NVD', { cvssMetricV31: [metric('Primary', 9.1)] }),
+      ],
+    }
+    const out = await fetchNvdCritical(undefined, new Date(0), new Date(1), 10, {
+      getPage: async url => (urls.push(url), page),
+      gapMs: 0,
+    })
+    expect(out.map(c => c.id)).toEqual(['CVE-2026-99362', 'CVE-NVD'])
+    expect(urls[0]).not.toContain('cvssV3Severity')
+  })
+
+  it('shows the highest score of any version and any scorer', () => {
+    const c = toCandidate(
+      raw('CVE-1', {
+        cvssMetricV40: [metric('Secondary', 8.7)],
+        cvssMetricV31: [metric('Primary', 7.5), metric('Secondary', 9.8)],
+      }),
+    )
+    expect(c.cvss).toBe(9.8)
+  })
+
+  it('reads every page before it caps', async () => {
+    const pages = [
+      {
+        totalResults: 2,
+        vulnerabilities: [raw('CVE-A', { cvssMetricV31: [metric('Primary', 5)] })],
+      },
+      {
+        totalResults: 2,
+        vulnerabilities: [raw('CVE-B', { cvssMetricV31: [metric('Secondary', 10)] })],
+      },
+    ]
+    let n = 0
+    const out = await fetchNvdCritical(undefined, new Date(0), new Date(1), 1, {
+      getPage: async () => pages[n++]!,
+      gapMs: 0,
+    })
+    expect(out.map(c => c.id)).toEqual(['CVE-B'])
+  })
+})
+
+describe('collector: http retries', () => {
+  const answers = (...codes: number[]) => {
+    let i = 0
+    return (async () => new Response('', { status: codes[i++] ?? 200 })) as unknown as typeof fetch
+  }
+  it('retries a status the caller names as a rate limit, such as NVD 403', async () => {
+    const res = await get('https://x', {
+      retryOn: [403],
+      backoffMs: 0,
+      fetchImpl: answers(403, 429, 200),
+    })
+    expect(res.status).toBe(200)
+  })
+  it('does not retry 403 by default', async () => {
+    await expect(get('https://x', { backoffMs: 0, fetchImpl: answers(403, 200) })).rejects.toThrow(
+      '403',
+    )
+  })
+})
+
 import { plainText } from '../scripts/collect/feed.ts'
 describe('collector: markdown', () => {
   it('keeps the words and drops the syntax', () =>
