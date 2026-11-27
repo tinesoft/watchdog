@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { NO_PRODUCT, type Threat } from '../src/lib/types'
-import { clearedSeen, defaults, firstSeen, rowsCache, rowsOf } from '../src/scripts/state'
+import {
+  clearedSeen,
+  defaults,
+  firstSeen,
+  migrateSeen,
+  rowsCache,
+  rowsOf,
+  sanitize,
+} from '../src/scripts/state'
 
 const threat = (id: string, over: Partial<Threat> = {}): Threat => ({
   id,
@@ -33,7 +41,7 @@ describe('the Inbox rule', () => {
     expect(inbox(threat('a', { product: 'OpenSSH', pkg: 'openssh' }))).toBe(true))
   it('keeps out a seen or triaged one', () => {
     const t = threat('a', { exploited: true })
-    expect(rowsOf([t], { ...defaults(), seen: ['a'] })[0]!.isNew).toBe(false)
+    expect(rowsOf([t], { ...defaults(), seen: ['a'], seenExploited: ['a'] })[0]!.isNew).toBe(false)
     expect(rowsOf([t], { ...defaults(), triage: { a: 'patched' } })[0]!.isNew).toBe(false)
   })
 })
@@ -53,7 +61,38 @@ describe('rowsCache', () => {
 describe('seen', () => {
   const threats = [threat('a', { exploited: true }), threat('b')]
   it('starts a first visit with only the Exploited Threats unseen', () =>
-    expect(firstSeen(threats)).toEqual(['b']))
-  it('clearing keeps only the IDs in the current data', () =>
-    expect(clearedSeen(threats)).toEqual(['a', 'b']))
+    expect(firstSeen(threats)).toEqual({ seen: ['b'], seenExploited: [] }))
+  it('clearing keeps only the IDs in the current data, and which were Exploited', () =>
+    expect(clearedSeen(threats)).toEqual({ seen: ['a', 'b'], seenExploited: ['a'] }))
+})
+
+describe('a Threat that becomes Exploited after it was seen', () => {
+  const was = threat('a', { product: 'OpenSSH', pkg: 'openssh' })
+  const now = { ...was, exploited: true }
+  const seenWhile = (t: Threat) => ({ ...defaults(), ...clearedSeen([t]) })
+
+  it('comes back to the Inbox', () => expect(rowsOf([now], seenWhile(was))[0]!.isNew).toBe(true))
+  it('stays out when it was already Exploited when seen', () =>
+    expect(rowsOf([now], seenWhile(now))[0]!.isNew).toBe(false))
+  it('stays out once it has a Triage status', () =>
+    expect(rowsOf([now], { ...seenWhile(was), triage: { a: 'not_affected' } })[0]!.isNew).toBe(
+      false,
+    ))
+})
+
+describe('old saved state, with seen but no seenExploited', () => {
+  const old = sanitize({ seen: ['a', 'b'] })
+  const threats = [threat('a', { exploited: true }), threat('b')]
+
+  it('loads without error, waiting for data to fill seenExploited', () =>
+    expect(old.seenExploited).toBeNull())
+  it('reads seen as "seen with its current Exploited state", so the Inbox does not change', () => {
+    const p = migrateSeen(old, threats)
+    expect(p.seenExploited).toEqual(['a'])
+    expect(rowsOf(threats, p).filter(r => r.isNew)).toEqual([])
+  })
+  it('leaves new state alone', () => {
+    const p = { ...defaults(), seenExploited: [] }
+    expect(migrateSeen(p, threats)).toBe(p)
+  })
 })

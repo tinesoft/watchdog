@@ -24,6 +24,7 @@ import {
   load,
   clearedSeen,
   firstSeen,
+  migrateSeen,
   PAGE,
   rowsCache,
   sanitize,
@@ -221,6 +222,7 @@ function importJson(): void {
     if (!file) return
     try {
       p = sanitize(JSON.parse(await file.text()))
+      settleSeen()
       commit()
       toast('Imported')
     } catch {
@@ -359,7 +361,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     render()
   },
   'clear-inbox': () => {
-    p = { ...p, seen: clearedSeen(data.threats?.items ?? []) }
+    p = { ...p, ...clearedSeen(data.threats?.items ?? []) }
     e.alertsOpen = false
     commit()
   },
@@ -403,7 +405,7 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     p = defaults()
     localStorage.removeItem(KEY)
     firstVisit = true
-    startInbox()
+    settleSeen()
     render()
   },
   theme: () => {
@@ -660,17 +662,21 @@ async function refresh(): Promise<void> {
   data.reports = reports ?? data.reports ?? { sample: false, collectedAt: null, items: [] }
   data.status = (await fetchStatus()) ?? data.status
   lastFetch = Date.now()
-  startInbox()
+  settleSeen()
   render()
   notifyNew()
 }
 
-function startInbox(): void {
+/** Once Threats are here: start the Inbox on a first visit, or migrate seen saved by an older version. */
+function settleSeen(): void {
   const items = data.threats?.items
-  if (!firstVisit || !items?.length) return
-  firstVisit = false
-  p = { ...p, seen: firstSeen(items) }
-  persist()
+  if (!items?.length) return
+  const before = p
+  if (firstVisit) {
+    firstVisit = false
+    p = { ...p, ...firstSeen(items) }
+  } else p = migrateSeen(p, items)
+  if (p !== before) persist()
 }
 
 async function boot(): Promise<void> {

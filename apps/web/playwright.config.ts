@@ -5,6 +5,11 @@ export default defineConfig({
   fullyParallel: true,
   reporter: 'list',
   use: { baseURL: 'http://localhost:4321/watchdog/', colorScheme: 'dark' },
+  projects: [
+    { name: 'app', testIgnore: /perf\.spec\.ts/ },
+    // Timing: alone, once the rest has finished.
+    { name: 'perf', testMatch: /perf\.spec\.ts/, dependencies: ['app'] },
+  ],
   webServer: {
     command:
       'node scripts/seed.ts && ../../node_modules/.bin/astro build && node scripts/build-sw.ts && exec ../../node_modules/.bin/astro preview --port 4321 --ignore-lock',

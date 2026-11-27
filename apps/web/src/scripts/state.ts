@@ -26,6 +26,11 @@ export interface Persisted {
   triage: Record<string, TriageStatus>
   notes: Record<string, string>
   seen: string[]
+  /**
+   * The seen Threats that were already Exploited when seen. Null in state saved before it
+   * existed, until the data arrives (see `migrateSeen`).
+   */
+  seenExploited: string[] | null
   repo: string
   labels: string
   alertsOn: boolean
@@ -87,6 +92,7 @@ export const defaults = (): Persisted => ({
   triage: {},
   notes: {},
   seen: [],
+  seenExploited: [],
   repo: '',
   labels: 'security',
   alertsOn: false,
@@ -136,6 +142,7 @@ export function sanitize(input: unknown): Persisted {
     triage: record(o.triage, x => STATUSES.includes(x)),
     notes: record(o.notes, () => true),
     seen: isStrings(o.seen) ? o.seen : [],
+    seenExploited: isStrings(o.seenExploited) ? o.seenExploited : isStrings(o.seen) ? null : [],
     repo: str(o.repo, d.repo),
     labels: str(o.labels, d.labels),
     alertsOn: o.alertsOn === true,
@@ -162,24 +169,27 @@ export interface Data {
 
 export function rowsOf(threats: Threat[], p: Persisted): Row[] {
   const seen = new Set(p.seen)
+  // Not migrated yet: count every seen Threat as seen Exploited, so none comes back by mistake.
+  const seenExploited = p.seenExploited ? new Set(p.seenExploited) : seen
   return threats.map(t => {
     const status = p.triage[t.id] ?? ''
     const mine = isMine(t, p.stack)
     const worthIt = t.exploited || mine || t.product !== NO_PRODUCT
     const hay = `${t.id} ${t.title} ${t.product}`.toLowerCase()
-    return { ...t, mine, status, isNew: !status && !seen.has(t.id) && worthIt, hay }
+    const unseen = !seen.has(t.id) || (t.exploited && !seenExploited.has(t.id))
+    return { ...t, mine, status, isNew: !status && unseen && worthIt, hay }
   })
 }
 
 /**
- * rowsOf, recomputed only when the threats, Stack, triage or seen change. Persisted is
+ * rowsOf, recomputed only when the threats, Stack, triage or seen (either list) change. Persisted is
  * replaced rather than mutated, so comparing those four by identity is enough.
  */
 export function rowsCache(): (threats: Threat[], p: Persisted) => Row[] {
   let key: unknown[] = []
   let rows: Row[] = []
   return (threats, p) => {
-    const next = [threats, p.stack, p.triage, p.seen]
+    const next = [threats, p.stack, p.triage, p.seen, p.seenExploited]
     if (next.some((x, i) => x !== key[i])) {
       key = next
       rows = rowsOf(threats, p)
@@ -188,12 +198,26 @@ export function rowsCache(): (threats: Threat[], p: Persisted) => Row[] {
   }
 }
 
+type Seen = Pick<Persisted, 'seen' | 'seenExploited'>
+
 /** On a first visit only the Threats that are Exploited right now start in the Inbox. */
-export const firstSeen = (threats: Threat[]): string[] =>
-  threats.filter(t => !t.exploited).map(t => t.id)
+export const firstSeen = (threats: Threat[]): Seen => ({
+  seen: threats.filter(t => !t.exploited).map(t => t.id),
+  seenExploited: [],
+})
 
 /** "Mark all as read": every Threat in the data is seen, and IDs no longer in it are dropped. */
-export const clearedSeen = (threats: Threat[]): string[] => threats.map(t => t.id)
+export const clearedSeen = (threats: Threat[]): Seen => ({
+  seen: threats.map(t => t.id),
+  seenExploited: threats.filter(t => t.exploited).map(t => t.id),
+})
+
+/** State saved before seenExploited existed: each seen Threat counts as seen in its current Exploited state. */
+export function migrateSeen(p: Persisted, threats: Threat[]): Persisted {
+  if (p.seenExploited) return p
+  const seen = new Set(p.seen)
+  return { ...p, seenExploited: threats.filter(t => t.exploited && seen.has(t.id)).map(t => t.id) }
+}
 
 export const byRisk = (a: Row, b: Row) => risk(b, b.mine) - risk(a, a.mine)
 
