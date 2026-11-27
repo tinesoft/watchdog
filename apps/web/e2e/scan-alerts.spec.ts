@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { returningUser } from './returning'
 
 const SAMPLE = JSON.stringify({
   dependencies: {
@@ -79,6 +80,7 @@ test('browser alerts notify once per new threat in the stack', async ({ page, co
     }
     ;(window as unknown as { Notification: unknown }).Notification = FakeNotification
   })
+  await returningUser(page)
   await page.goto('./')
   await page.getByRole('button', { name: /^Edit my stack/ }).click()
   await page.getByRole('button', { name: /Log4j/ }).click()

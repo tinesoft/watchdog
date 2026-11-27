@@ -1,3 +1,6 @@
+/** The product a Threat carries when no Source names one. */
+export const NO_PRODUCT = 'Unidentified product'
+
 export type Severity = 'critical' | 'high' | 'medium'
 export type Category = 'packages' | 'languages' | 'os' | 'ai' | 'tools' | 'supply'
 export type ThreatType = 'bug' | 'worm' | 'virus' | 'trojan' | 'hacker'

@@ -11,6 +11,7 @@ import type {
   Threat,
   TriageStatus,
 } from '../lib/types'
+import { NO_PRODUCT } from '../lib/types'
 
 export type View =
   'inbox' | 'all' | 'stack-feed' | 'triage' | 'scan' | 'stack' | 'reports' | 'sources'
@@ -60,7 +61,12 @@ export interface Ephemeral {
   scanOsv: boolean
   scanBusy: boolean
   scan: ScanOutcome | null
+  /** How many rows a Threat list draws; "Show more" raises it by PAGE. */
+  limit: number
 }
+
+/** Rows a Threat list draws before "Show more". */
+export const PAGE = 100
 
 export const KEY = 'watchdog:v1'
 
@@ -142,7 +148,10 @@ export function sanitize(input: unknown): Persisted {
 export interface Row extends Threat {
   mine: boolean
   status: TriageStatus | ''
+  /** In the Inbox: see GLOSSARY.md. */
   isNew: boolean
+  /** What the search matches against, lowercased once. */
+  hay: string
 }
 
 export interface Data {
@@ -155,9 +164,36 @@ export function rowsOf(threats: Threat[], p: Persisted): Row[] {
   const seen = new Set(p.seen)
   return threats.map(t => {
     const status = p.triage[t.id] ?? ''
-    return { ...t, mine: isMine(t, p.stack), status, isNew: !status && !seen.has(t.id) }
+    const mine = isMine(t, p.stack)
+    const worthIt = t.exploited || mine || t.product !== NO_PRODUCT
+    const hay = `${t.id} ${t.title} ${t.product}`.toLowerCase()
+    return { ...t, mine, status, isNew: !status && !seen.has(t.id) && worthIt, hay }
   })
 }
+
+/**
+ * rowsOf, recomputed only when the threats, Stack, triage or seen change. Persisted is
+ * replaced rather than mutated, so comparing those four by identity is enough.
+ */
+export function rowsCache(): (threats: Threat[], p: Persisted) => Row[] {
+  let key: unknown[] = []
+  let rows: Row[] = []
+  return (threats, p) => {
+    const next = [threats, p.stack, p.triage, p.seen]
+    if (next.some((x, i) => x !== key[i])) {
+      key = next
+      rows = rowsOf(threats, p)
+    }
+    return rows
+  }
+}
+
+/** On a first visit only the Threats that are Exploited right now start in the Inbox. */
+export const firstSeen = (threats: Threat[]): string[] =>
+  threats.filter(t => !t.exploited).map(t => t.id)
+
+/** "Mark all as read": every Threat in the data is seen, and IDs no longer in it are dropped. */
+export const clearedSeen = (threats: Threat[]): string[] => threats.map(t => t.id)
 
 export const byRisk = (a: Row, b: Row) => risk(b, b.mine) - risk(a, a.mine)
 
@@ -180,7 +216,7 @@ export function filtered(base: Row[], e: Pick<Ephemeral, 'cat' | 'exp' | 'q'>): 
     .filter(v => {
       if (e.cat !== 'all' && v.category !== e.cat) return false
       if (e.exp && !v.exploited) return false
-      return !q || `${v.id} ${v.title} ${v.product}`.toLowerCase().includes(q)
+      return !q || v.hay.includes(q)
     })
     .sort(byRisk)
 }

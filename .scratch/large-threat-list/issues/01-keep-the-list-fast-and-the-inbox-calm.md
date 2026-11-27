@@ -35,14 +35,14 @@ Measured on the Nov 26, 2026 data (desktop node, not a real phone):
 
 ## Acceptance criteria
 
-- [ ] With 2,500 Threats, the search `input` handler stays under 16 ms, and the render after the debounce stays under 50 ms (Playwright trace, CPU throttled 4×).
-- [ ] The Inbox rule is written down in `GLOSSARY.md` (Inbox entry) if it changes.
-- [ ] The e2e tests cover a data file of 2,500 Threats, not only the seed. It comes from a deterministic generator that grows the seed while keeping the real shape (about 52% with no product, a realistic Exploited share), and is served with `page.route('**/data/threats.json')`.
-- [ ] The list draws at most 100 rows until "Show more" is pressed, and N resets on a query, category, Exploited or view change.
-- [ ] A new Threat that is not Exploited, not Mine and names no product stays out of the Inbox but is listed in All Threats.
-- [ ] On a first visit, the Inbox holds only the Threats that are Exploited right now.
-- [ ] "Mark all as read" leaves `seen` holding only IDs in the current data.
-- [ ] Screenshots at 390px and desktop of the list with "Show more", compared with the design.
+- [x] With 2,500 Threats, the search `input` handler stays under 16 ms, and the render after the debounce stays under 50 ms (Playwright trace, CPU throttled 4×).
+- [x] The Inbox rule is written down in `GLOSSARY.md` (Inbox entry) if it changes.
+- [x] The e2e tests cover a data file of 2,500 Threats, not only the seed. It comes from a deterministic generator that grows the seed while keeping the real shape (about 52% with no product, a realistic Exploited share), and is served with `page.route('**/data/threats.json')`.
+- [x] The list draws at most 100 rows until "Show more" is pressed, and N resets on a query, category, Exploited or view change.
+- [x] A new Threat that is not Exploited, not Mine and names no product stays out of the Inbox but is listed in All Threats.
+- [x] On a first visit, the Inbox holds only the Threats that are Exploited right now.
+- [x] "Mark all as read" leaves `seen` holding only IDs in the current data.
+- [x] Screenshots at 390px and desktop of the list with "Show more", compared with the design.
 
 ## Comments
 
@@ -55,3 +55,13 @@ Measured on the Nov 26, 2026 data (desktop node, not a real phone):
   - "Mark all as read" trims `seen` to the IDs in the current data.
 - 2026-11-27: Grilling finished. Decisions are under **Decided**. Q14 (Exploited after seen) split out to 04. Status: `ready-for-agent`, once the design has the "Show more" control.
 - 2026-11-27: The design now has "Show more" (button, then a muted "Showing N of M" line) and a "See all threats" button in the empty Inbox. Synced to `docs/design/Main.dc.html`. The design's page size is 8 so the control shows with its 13 sample Threats; the app uses 100. No longer blocked.
+- 2026-11-27: Done.
+  - **Inbox rule**: `rowsOf` puts a Threat in the Inbox (`isNew`) only if it is Exploited, Mine, or its product is not `NO_PRODUCT` (now a shared constant in `src/lib/types.ts`, also used by the merge step). The NEW tag follows the Inbox.
+  - **Rows cache**: `rowsCache` recomputes rows only when the threats, Stack, triage or seen change. Each row also stores its lowercased search text (`hay`).
+  - **Show more**: `e.limit` resets to `PAGE` (100) in `render()` whenever the view, category, Exploited filter or query changes. "Show more" keeps keyboard focus after it adds rows.
+  - **Seen**: `firstSeen` runs on a first visit (no saved state) and again after "Erase", once data arrives. `clearedSeen` sets `seen` to exactly the current IDs.
+  - **Tests**: unit tests in `tests/state.test.ts`. The e2e file `e2e/large.spec.ts` uses the generator in `e2e/large.ts`: 2,534 Threats, about 52% with no product, about 5% Exploited.
+  - **Timing**: measured on a desktop with Chromium and the CPU throttled 4×. The input handler takes about 0.1 ms. The render after the pause, with style and layout forced, takes about 19 ms alone and up to about 39 ms with the full suite running in parallel. Before the `hay` change it was about 45 ms.
+  - **Existing tests**: three tests now start as a returning user (`e2e/returning.ts`), because a first visit no longer puts every seed Threat in the Inbox.
+  - **Edge case**: if a first visit saves something before the data loads and the data never loads, the next visit is not counted as a first visit, so its Inbox fills.
+  - **Seen elsewhere**: at 390px the rows are cramped. The CVE ID wraps over three lines and the title is cut to a few letters, with the seed data too. The row markup didn't change here, so this needs its own ticket.

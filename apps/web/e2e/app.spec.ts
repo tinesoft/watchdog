@@ -1,17 +1,31 @@
 import { expect, test } from '@playwright/test'
+import { returningUser } from './returning'
 
 test.beforeEach(async ({ page }) => {
   await page.goto('./')
   await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
 })
 
-test('inbox lists the riskiest threat first and counts match the nav', async ({ page }) => {
+test('a first visit starts the Inbox with only the Exploited Threats, riskiest first', async ({
+  page,
+}) => {
   const first = page.locator('.trow').first()
   await expect(first).toContainText('CVE-2021-44228')
+  await expect(page.getByRole('button', { name: /^Inbox, 4/ })).toBeVisible()
+  await expect(page.locator('.trow')).toHaveCount(4)
+  await expect(page.locator('.trow .kev')).toHaveCount(4)
+})
+
+test('a returning user sees every new Threat in the Inbox, riskiest first', async ({ page }) => {
+  await returningUser(page)
+  await page.reload()
+  await expect(page.locator('.trow').first()).toContainText('CVE-2021-44228')
   await expect(page.getByRole('button', { name: /^Inbox, 13/ })).toBeVisible()
 })
 
 test('triage status and notes persist across a reload, and leave the inbox', async ({ page }) => {
+  await returningUser(page)
+  await page.reload()
   await page.locator('.trow', { hasText: 'CVE-2024-3094' }).click()
   await page.getByRole('button', { name: 'Patched' }).click()
   await page.locator('#wd-note').fill('rolled back to 5.4.6')

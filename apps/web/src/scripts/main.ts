@@ -22,7 +22,10 @@ import {
   KEY,
   labelList,
   load,
-  rowsOf,
+  clearedSeen,
+  firstSeen,
+  PAGE,
+  rowsCache,
   sanitize,
   save,
   alertList,
@@ -38,6 +41,8 @@ const root = document.getElementById('app')!
 const toastEl = document.getElementById('wd-toast')!
 const base = import.meta.env.BASE_URL
 
+/** No saved state: the first Threats to arrive start the Inbox (see `firstSeen`). */
+let firstVisit = !localStorage.getItem(KEY)
 let p: Persisted = load(localStorage)
 const e: Ephemeral = {
   view: 'inbox',
@@ -58,6 +63,7 @@ const e: Ephemeral = {
   scanOsv: false,
   scanBusy: false,
   scan: null,
+  limit: PAGE,
 }
 const data: Data = { threats: null, reports: null, status: null }
 
@@ -65,12 +71,15 @@ const systemTheme = (): Theme =>
   matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 const theme = (): Theme => p.theme ?? systemTheme()
 
+const rows = rowsCache()
+const noThreats: Threat[] = []
+
 function ctx(): Ctx {
   return {
     p,
     e,
     data,
-    rows: rowsOf(data.threats?.items ?? [], p),
+    rows: rows(data.threats?.items ?? noThreats, p),
     now: new Date(),
     theme: theme(),
     version: pkg.version,
@@ -98,8 +107,16 @@ setInterval(() => {
 /** Search keystrokes render once typing pauses; any other render supersedes the pending one. */
 const searchRender = debounce(() => render(), 150)
 
+/** A Threat list draws PAGE rows again whenever what it lists changes. */
+let listKey = ''
+
 function render(): void {
   searchRender.cancel()
+  const key = [e.view, e.cat, e.exp, e.q].join('\0')
+  if (key !== listKey) {
+    listKey = key
+    e.limit = PAGE
+  }
   const active = document.activeElement as HTMLInputElement | null
   const id = active?.id
   const caret =
@@ -333,12 +350,16 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     e.cat = a as Ephemeral['cat']
     render()
   },
+  'show-more': () => {
+    e.limit += PAGE
+    render()
+  },
   exploited: () => {
     e.exp = !e.exp
     render()
   },
   'clear-inbox': () => {
-    p = { ...p, seen: [...new Set([...p.seen, ...(data.threats?.items ?? []).map(t => t.id)])] }
+    p = { ...p, seen: clearedSeen(data.threats?.items ?? []) }
     e.alertsOpen = false
     commit()
   },
@@ -381,6 +402,8 @@ const actions: Record<string, (arg: string, el: HTMLElement) => void> = {
     if (!confirm('Erase your stack, triage statuses, notes and settings from this browser?')) return
     p = defaults()
     localStorage.removeItem(KEY)
+    firstVisit = true
+    startInbox()
     render()
   },
   theme: () => {
@@ -637,8 +660,17 @@ async function refresh(): Promise<void> {
   data.reports = reports ?? data.reports ?? { sample: false, collectedAt: null, items: [] }
   data.status = (await fetchStatus()) ?? data.status
   lastFetch = Date.now()
+  startInbox()
   render()
   notifyNew()
+}
+
+function startInbox(): void {
+  const items = data.threats?.items
+  if (!firstVisit || !items?.length) return
+  firstVisit = false
+  p = { ...p, seen: firstSeen(items) }
+  persist()
 }
 
 async function boot(): Promise<void> {

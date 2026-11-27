@@ -303,17 +303,27 @@ export function listView(c: Ctx): string {
     .join('')}</div>
 <button type="button" class="pick ${c.e.exp ? 'pick-on' : ''}" data-act="exploited" aria-pressed="${c.e.exp}" style="gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: var(--crit)"></span>Exploited only</button><span class="mono" style="margin-left: auto; font-size: 12px; color: var(--dim)">Riskiest first</span></div>
 ${paneScroll(c)}${shown.length === 0 ? emptyState(c) : ''}
-<div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface)">${shown.map(v => row(v, v.id === c.e.sel)).join('')}</div></div>
+<div style="display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface)">${shown
+    .slice(0, c.e.limit)
+    .map(v => row(v, v.id === c.e.sel))
+    .join('')}</div>${showMore(Math.min(c.e.limit, shown.length), shown.length)}</div>
 ${legend()}`
 }
 
 /** The part of a page below its header. On large screens it scrolls by itself while the header stays put. */
 const paneScroll = (c: Ctx) => `<div class="pane-scroll" data-scroll="main-${c.e.view}">`
 
+const count = (n: number) => n.toLocaleString('en-US')
+
+function showMore(drawn: number, total: number): string {
+  if (drawn >= total) return ''
+  return `<div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px 0 4px"><button type="button" id="wd-more" class="btn btn-g" data-act="show-more">Show more</button><span class="mono" style="font-size: 12px; color: var(--dim)">Showing ${count(drawn)} of ${count(total)}</span></div>`
+}
+
 function emptyState(c: Ctx): string {
   const msg =
     c.e.view === 'inbox'
-      ? '<b style="color: var(--text)">Inbox zero.</b> Nothing new since you last cleared it. The dog keeps patrolling.'
+      ? '<b style="color: var(--text)">Inbox zero.</b> Nothing new since you last cleared it. The dog keeps patrolling.<div style="margin-top: 14px"><button type="button" class="btn btn-g" data-act="go" data-arg="all">See all threats</button></div>'
       : c.e.view === 'stack-feed' && c.p.stack.length === 0
         ? '<b style="color: var(--text)">Your stack is empty.</b> Tell the dog what you run in <b>Edit my stack</b>.'
         : '<b style="color: var(--text)">Nothing here.</b> No threats match these filters.'

@@ -1,4 +1,10 @@
-import type { Advisory, Category, Threat, ThreatType } from '../../src/lib/types.ts'
+import {
+  NO_PRODUCT,
+  type Advisory,
+  type Category,
+  type Threat,
+  type ThreatType,
+} from '../../src/lib/types.ts'
 import type { Candidate } from './candidate.ts'
 import { categoryOf, severityOf, threatTypeOf } from './enrich.ts'
 import type { KevEntry } from './kev.ts'
@@ -42,7 +48,7 @@ export function mergeThreat(
     pick('pkg') ??
     (kev ? `${kev.vendor} ${kev.product}`.trim() : undefined) ??
     pick('product') ??
-    'Unidentified product'
+    NO_PRODUCT
   const title = override?.title ?? first(pick('title'), kev?.name) ?? id
   const summary = override?.summary ?? first(pick('summary'), kev?.summary) ?? ''
   const product =
