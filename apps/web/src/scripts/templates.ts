@@ -218,10 +218,17 @@ export function sidebar(c: Ctx): string {
   return `${c.e.mobileNav ? '<button type="button" class="nav-backdrop" data-act="toggle-nav" aria-label="Close navigation"></button>' : ''}<nav id="wd-side" data-scroll="side" aria-label="Views" class="side ${collapsed ? 'side-collapsed' : ''} ${c.e.mobileNav ? 'side-open' : ''}" style="border-right: 1px solid var(--line); padding: 12px 12px 16px; display: flex; flex-direction: column; gap: 2px; background: var(--glass2)">
 <div style="display: flex; justify-content: flex-end; padding-bottom: 6px" class="side-top"><button type="button" class="nav side-toggle" data-act="side" aria-label="${collapsed ? 'Expand sidebar' : 'Collapse sidebar'}" aria-expanded="${!collapsed}" title="${collapsed ? 'Expand sidebar' : 'Collapse sidebar'}" style="width: 40px; min-height: 40px; padding: 0; justify-content: center">${collapsed ? icons.sideExpand : icons.sideCollapse}</button></div>
 ${nav
-  .map(
-    n =>
-      `${n.section ? `<div class="mono sec-label" style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); padding: 14px 12px 6px">${n.section}</div><div class="sec-div" aria-hidden="true"></div>` : ''}<button type="button" class="nav ${c.e.view === n.key ? 'nav-on' : ''}" data-act="go" data-arg="${n.key}" title="${n.label}" aria-label="${n.label}${n.count !== '' ? ', ' + n.count : ''}"${c.e.view === n.key ? ' aria-current="page"' : ''}><span class="nav-ic">${icons[n.icon]}<span class="nav-dot"></span></span><span class="nav-text">${n.label}</span><span class="n ${n.count ? n.ncls : ''}">${n.count}</span></button>`,
-  )
+  .map(n => {
+    // With no stack yet, Edit my stack swaps its pencil for the lime dog and shows "!".
+    const attn = n.key === 'stack' && !c.p.stack.length
+    const aria = attn
+      ? `${n.label}: no stack yet, tell the dog what you run`
+      : `${n.label}${n.count !== '' ? ', ' + n.count : ''}`
+    const count = attn
+      ? `<span class="n n-new n-attn">!<span class="lg-tip attn-tip" role="tooltip">Set up your stack so the dog can warn you when vulnerabilities targeting what you run are exploited in the wild.</span></span>`
+      : `<span class="n ${n.count ? n.ncls : ''}">${n.count}</span>`
+    return `${n.section ? `<div class="mono sec-label" style="font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); padding: 14px 12px 6px">${n.section}</div><div class="sec-div" aria-hidden="true"></div>` : ''}<button type="button" class="nav ${c.e.view === n.key ? 'nav-on' : ''}${attn ? ' nav-attn' : ''}" data-act="go" data-arg="${n.key}" title="${n.label}" aria-label="${aria}"${c.e.view === n.key ? ' aria-current="page"' : ''}><span class="nav-ic">${attn ? icons.attnDog : icons[n.icon]}<span class="nav-dot"></span></span><span class="nav-text">${n.label}</span>${count}</button>`
+  })
   .join('')}
 <button type="button" class="side-mini ${hot ? 'barking' : 'calm'}" data-act="go" data-arg="stack-feed" title="${barkTitle}" aria-label="${barkTitle}" style="color: ${dogColor}">${dogFace(30)}${hot ? `<span class="mono bark-count">${hot}</span><span class="mono bark-word">woof!</span>` : ''}</button>
 <div class="side-card" style="margin-top: 16px; border: 1px solid ${hot ? 'var(--crit)' : 'var(--line)'}; border-radius: 12px; padding: 14px; background: var(--surface); display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--text2)"><b class="mono" style="font-size: 13px; color: ${hot ? 'var(--crit-t)' : 'var(--lime)'}">${hot ? `// woof! ${hot} exploited` : '// patrolling'}</b><span>${hot ? 'New threats in your stack are being exploited in the wild.' : 'Nothing new in your stack is being exploited.'}</span></div>

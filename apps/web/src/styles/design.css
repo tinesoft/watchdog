@@ -751,6 +751,153 @@ a:hover {
 .calm .bark-eye {
   animation: lookeye 5s ease-in-out infinite;
 }
+/* Edit my stack with no stack yet: the lime dog asks for one. */
+.nav-attn:not(.nav-on) {
+  color: var(--text);
+}
+.nav-attn .nav-ic {
+  color: var(--lime);
+}
+.attn-dog {
+  display: inline-block;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  overflow: visible;
+}
+.attn-dog svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+}
+.ad-tilt {
+  position: absolute;
+  inset: 0;
+  transform-origin: 10px 17px;
+  animation: adtilt 2.4s ease-in-out infinite;
+}
+.ad-ear-l {
+  transform-origin: 6.5px 8.5px;
+  animation: adearl 2.4s ease-in-out infinite;
+}
+.ad-ear-r {
+  transform-origin: 13.5px 8.5px;
+  animation: adearr 2.4s ease-in-out 0.12s infinite;
+}
+.ad-bang {
+  animation: adbang 2.4s ease-in-out infinite;
+}
+@keyframes adtilt {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  15%,
+  38% {
+    transform: rotate(-14deg);
+  }
+  55%,
+  78% {
+    transform: rotate(11deg);
+  }
+}
+@keyframes adearl {
+  0%,
+  8%,
+  30%,
+  52%,
+  72%,
+  100% {
+    transform: rotate(0);
+  }
+  14% {
+    transform: rotate(-22deg);
+  }
+  20% {
+    transform: rotate(8deg);
+  }
+  58% {
+    transform: rotate(-16deg);
+  }
+  64% {
+    transform: rotate(6deg);
+  }
+}
+@keyframes adearr {
+  0%,
+  8%,
+  30%,
+  52%,
+  72%,
+  100% {
+    transform: rotate(0);
+  }
+  14% {
+    transform: rotate(22deg);
+  }
+  20% {
+    transform: rotate(-8deg);
+  }
+  58% {
+    transform: rotate(16deg);
+  }
+  64% {
+    transform: rotate(-6deg);
+  }
+}
+@keyframes adbang {
+  0%,
+  46%,
+  100% {
+    transform: translateY(0);
+  }
+  8% {
+    transform: translateY(-4px);
+  }
+  16% {
+    transform: translateY(0);
+  }
+  24% {
+    transform: translateY(-2px);
+  }
+  32% {
+    transform: translateY(0);
+  }
+}
+.n-attn {
+  position: relative;
+  animation: adpill 2.4s ease-in-out infinite;
+}
+@keyframes adpill {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--glow);
+  }
+  50% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+.attn-tip {
+  left: auto;
+  right: -6px;
+  width: 230px;
+  text-align: left;
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: 400;
+}
+.n-attn:hover .attn-tip,
+.nav-ic:hover ~ .n-attn .attn-tip,
+.nav-attn:focus-visible .attn-tip {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.side-collapsed .attn-tip {
+  right: auto;
+  left: -6px;
+}
 .legend-pin {
   position: sticky;
   bottom: 12px;
@@ -1151,6 +1298,10 @@ a:hover {
   .legend-pin {
     position: static;
     flex: none;
+  }
+  /* The collapsed rail lets the Edit my stack tooltip overhang it. */
+  .side-collapsed {
+    overflow: visible !important;
   }
 }
 @media (prefers-reduced-motion: reduce) {

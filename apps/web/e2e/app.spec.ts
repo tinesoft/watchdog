@@ -23,7 +23,7 @@ test('triage status and notes persist across a reload, and leave the inbox', asy
 })
 
 test('adding to the stack marks threats as mine and wakes the dog', async ({ page }) => {
-  await page.getByRole('button', { name: 'Edit my stack, 0' }).click()
+  await page.getByRole('button', { name: /^Edit my stack: no stack yet/ }).click()
   await page.getByRole('button', { name: /Log4j/ }).click()
   await page.getByRole('button', { name: /^My stack, 1/ }).click()
   await expect(page.locator('.trow')).toHaveCount(1)
@@ -58,7 +58,7 @@ test('search narrows the list and the exploited filter works', async ({ page }) 
 test('the tab icon turns to the alarm colour while the dog barks, and back', async ({ page }) => {
   const icon = () => page.locator('#wd-favicon').getAttribute('href')
   expect(await icon()).toBe('/watchdog/favicon.svg')
-  await page.getByRole('button', { name: 'Edit my stack, 0' }).click()
+  await page.getByRole('button', { name: /^Edit my stack: no stack yet/ }).click()
   await page.getByRole('button', { name: /Log4j/ }).click()
   const alarm = decodeURIComponent((await icon())!)
   expect(alarm).toContain('#FF5A4E')
