@@ -1,5 +1,6 @@
 import pkg from '../../package.json'
 import { issueUrl, toCsv, toMarkdown } from '../lib/export'
+import { debounce } from '../lib/debounce'
 import { ALARM_COLOR, faviconDataUri } from '../lib/favicon'
 import { queryOsv } from '../lib/osv'
 import { registerServiceWorker } from './pwa'
@@ -94,7 +95,11 @@ setInterval(() => {
   if (drawer) drawer.innerHTML = sweepText(ctx())
 }, 30_000)
 
+/** Search keystrokes render once typing pauses; any other render supersedes the pending one. */
+const searchRender = debounce(() => render(), 150)
+
 function render(): void {
+  searchRender.cancel()
   const active = document.activeElement as HTMLInputElement | null
   const id = active?.id
   const caret =
@@ -475,8 +480,11 @@ root.addEventListener('input', ev => {
   switch (el.dataset.in) {
     case 'q':
       e.q = el.value
-      if (!isListView(e.view)) e.view = 'all'
-      render()
+      if (!isListView(e.view)) {
+        e.view = 'all'
+        render()
+      } else if (!e.q) render()
+      else searchRender()
       break
     case 'ac':
       e.acQuery = el.value
@@ -514,6 +522,10 @@ root.addEventListener('input', ev => {
 
 root.addEventListener('keydown', ev => {
   const el = ev.target as HTMLElement
+  if (el.dataset.in === 'q') {
+    if (ev.key === 'Enter') searchRender.flush()
+    return
+  }
   if (el.dataset.in === 'label-draft') {
     const labels = labelList(p.labels)
     if (ev.key === 'Enter') {

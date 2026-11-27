@@ -19,9 +19,11 @@ Each keystroke in the search bar (`#wd-q`, `data-in="q"`) runs a full `render()`
 
 ## Acceptance criteria
 
-- [ ] Unit tests in `apps/web/tests/` with Vitest fake timers: a burst of calls merges into one; `flush` runs the pending call now; `cancel` drops it.
-- [ ] Clearing the field, pressing Enter, and typing from a non-list view render without waiting.
-- [ ] A render triggered by something else while a debounce is pending leaves no second render behind.
-- [ ] The existing e2e search test (`e2e/app.spec.ts`, `fill('php')`) still passes.
+- [x] Unit tests in `apps/web/tests/` with Vitest fake timers: a burst of calls merges into one; `flush` runs the pending call now; `cancel` drops it.
+- [x] Clearing the field, pressing Enter, and typing from a non-list view render without waiting.
+- [x] A render triggered by something else while a debounce is pending leaves no second render behind.
+- [x] The existing e2e search test (`e2e/app.spec.ts`, `fill('php')`) still passes.
 
 ## Comments
+
+- 2026-11-27: Done. `src/lib/debounce.ts` (unit-tested in `tests/debounce.test.ts`) drives `searchRender` in `main.ts`. `render()` cancels any pending search render. The e2e test "search waits for a pause in typing…" in `e2e/app.spec.ts` pauses the Playwright clock to check the delay, Enter, clearing, and a click during the wait. Not covered by a test: the jump to `all` from a non-list view (it renders at once, as before).

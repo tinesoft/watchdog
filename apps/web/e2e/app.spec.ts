@@ -55,6 +55,36 @@ test('search narrows the list and the exploited filter works', async ({ page }) 
   await expect(page.locator('.trow')).toHaveCount(1)
 })
 
+test('search waits for a pause in typing, but Enter, clearing and clicks apply at once', async ({
+  page,
+}) => {
+  await page.clock.install()
+  await page.reload()
+  await page.clock.pauseAt(Date.now() + 1000)
+  await page.getByRole('button', { name: /^All threats/ }).click()
+  const rows = page.locator('.trow')
+  const all = await rows.count()
+  const q = page.locator('#wd-q')
+
+  await q.fill('php')
+  await expect(rows).toHaveCount(all)
+  await page.clock.runFor(150)
+  await expect(rows).toHaveCount(1)
+
+  await q.fill('')
+  await expect(rows).toHaveCount(all)
+
+  await q.fill('php')
+  await q.press('Enter')
+  await expect(rows).toHaveCount(1)
+
+  await q.fill('')
+  await q.fill('php')
+  await page.getByRole('button', { name: 'Exploited only' }).click()
+  await expect(rows).toHaveCount(1)
+  await expect(q).toHaveValue('php')
+})
+
 test('the tab icon turns to the alarm colour while the dog barks, and back', async ({ page }) => {
   const icon = () => page.locator('#wd-favicon').getAttribute('href')
   expect(await icon()).toBe('/watchdog/favicon.svg')
