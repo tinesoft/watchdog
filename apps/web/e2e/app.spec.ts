@@ -54,7 +54,7 @@ test('theme toggle switches and persists', async ({ page }) => {
 
 test('sources and field reports pages render', async ({ page }) => {
   await page.getByRole('button', { name: /^Sources/ }).click()
-  await expect(page.getByText('29 trusted sources')).toBeVisible()
+  await expect(page.getByText('30 trusted sources')).toBeVisible()
   await page.getByRole('button', { name: 'Field reports' }).click()
   await expect(page.getByText('sample reports')).toBeVisible()
   await page.getByRole('button', { name: /^Sophos/ }).click()

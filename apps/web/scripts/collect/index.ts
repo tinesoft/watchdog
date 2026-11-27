@@ -16,7 +16,9 @@ import type {
   SweepStatus,
   Threat,
 } from '../../src/lib/types.ts'
+import { NO_PRODUCT } from '../../src/lib/types.ts'
 import type { Candidate } from './candidate.ts'
+import { fetchCveOrgProducts } from './cveorg.ts'
 import * as C from './config.ts'
 import { ADVISORY_FEEDS, REPORT_FEEDS, fetchAdvisories, fetchReports } from './feeds.ts'
 import { getJson } from './http.ts'
@@ -135,6 +137,35 @@ for (const [id, list] of cands) {
   }
 }
 log(`nvd lookups: ${lookups}`)
+
+// Products: when no Source names one, reuse the last Sweep's, then ask CVE.org (the assigner's record).
+const named = (id: string, list: Candidate[]) => {
+  const o = (overrides as Record<string, Override>)[id]
+  return !!(o?.pkg || o?.product || kevById.has(id) || list.some(c => c.pkg || c.product))
+}
+const unnamed: string[] = []
+for (const [id, list] of cands) {
+  if (named(id, list)) continue
+  const before = prevById.get(id)
+  if (before && before.pkg !== NO_PRODUCT)
+    add({
+      id,
+      source: 'cve-org',
+      eco: before.eco ?? undefined,
+      pkg: before.pkg,
+      product: before.eco ? undefined : before.product,
+    })
+  else if (id.startsWith('CVE-')) unnamed.push(id)
+}
+log(
+  `cve-org: ${unnamed.length} to look up, ${unnamed.length > C.CVE_ORG_LOOKUP_CAP ? `capped at ${C.CVE_ORG_LOOKUP_CAP}` : 'no cap hit'}`,
+)
+const cveOrg = await run(
+  'cve-org',
+  () => fetchCveOrgProducts(unnamed.slice(0, C.CVE_ORG_LOOKUP_CAP), { log }),
+  r => r.length,
+)
+cveOrg?.forEach(add)
 
 // ---- Advisory feeds -------------------------------------------------------
 const advisories = new Map<string, Advisory[]>()

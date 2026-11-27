@@ -25,7 +25,7 @@ test('after one visit the app reloads and works with no network', async ({ page,
   await expect(page.locator('.trow').first()).toBeVisible()
   await expect(page.locator('#wd-sweep')).toBeVisible()
   await page.getByRole('button', { name: /^Sources/ }).click()
-  await expect(page.getByText('29 trusted sources')).toBeVisible()
+  await expect(page.getByText('30 trusted sources')).toBeVisible()
   await context.setOffline(false)
 })
 

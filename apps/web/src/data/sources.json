@@ -41,6 +41,13 @@
         "mode": "collected"
       },
       {
+        "name": "CVE Program records (CVE.org)",
+        "url": "https://www.cve.org/",
+        "host": "cve.org",
+        "id": "cve-org",
+        "mode": "collected"
+      },
+      {
         "name": "CERT-FR (ANSSI) avis",
         "url": "https://www.cert.ssi.gouv.fr/",
         "host": "cert.ssi.gouv.fr",

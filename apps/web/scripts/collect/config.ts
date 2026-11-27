@@ -10,6 +10,11 @@ export const NVD_CRITICAL_DAYS = 30
 export const NVD_CAP = 2500
 /** Per-CVE NVD lookups per Sweep, for Threats that KEV or GitHub reported without a score. */
 export const NVD_LOOKUP_CAP = Number(process.env.NVD_LOOKUP_CAP ?? 25)
+/**
+ * Per-CVE CVE.org lookups per Sweep, for Threats no other Source names a product for. The first
+ * Sweep after a gap needs about 1,300; later ones about 50 a day, since earlier products are reused.
+ */
+export const CVE_ORG_LOOKUP_CAP = Number(process.env.CVE_ORG_LOOKUP_CAP ?? 3000)
 export const REPORT_DAYS = 21
 export const REPORTS_PER_LAB = 12
 export const SIZE_BUDGET_GZ = 1_000_000
