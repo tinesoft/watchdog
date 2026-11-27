@@ -45,7 +45,7 @@ The user's own decision on a Threat: investigating, patched, not affected or ign
 _Avoid_: State, resolution
 
 **Inbox**:
-The Threats that are new since the user last cleared it and have no Triage status.
+The Threats with no Triage status that are new since the user last cleared it, or have become Exploited since the user saw them, and that are Exploited, Mine, or name a product. A new Threat that is none of these is still listed with all Threats, but stays out of the Inbox.
 _Avoid_: Queue, unread
 
 **Scan**:
