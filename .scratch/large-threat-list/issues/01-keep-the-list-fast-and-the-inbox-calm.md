@@ -1,7 +1,6 @@
 # Keep the list fast and the Inbox calm with ~2,500 Threats
 
 Status: ready-for-agent
-Blocked by: the "Show more" control and count line being added to the design artifact (`docs/design/`, see `docs/agents/design.md`)
 
 ## Why
 
@@ -55,3 +54,4 @@ Measured on the Nov 26, 2026 data (desktop node, not a real phone):
   - Mine for Threats with no product is split out to `03-give-unidentified-threats-a-product.md`.
   - "Mark all as read" trims `seen` to the IDs in the current data.
 - 2026-11-27: Grilling finished. Decisions are under **Decided**. Q14 (Exploited after seen) split out to 04. Status: `ready-for-agent`, once the design has the "Show more" control.
+- 2026-11-27: The design now has "Show more" (button, then a muted "Showing N of M" line) and a "See all threats" button in the empty Inbox. Synced to `docs/design/Main.dc.html`. The design's page size is 8 so the control shows with its 13 sample Threats; the app uses 100. No longer blocked.
